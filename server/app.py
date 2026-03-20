@@ -1482,6 +1482,12 @@ def daily_performance():
     """Serve daily performance dashboard"""
     return send_from_directory(ROOT_DIR, 'daily-performance.html')
 
+@app.route('/settings')
+@app.route('/settings-dashboard.html')
+def settings_dashboard():
+    """Serve settings dashboard"""
+    return send_from_directory(ROOT_DIR, 'settings-dashboard.html')
+
 # =====================================================
 # START SERVER
 
