@@ -213,3 +213,87 @@ class SupabaseClient:
         except Exception as e:
             logger.error(f"Error getting performance history: {e}")
             return []
+
+    # =====================================================
+    # STRATEGY SETTINGS (Real-time config from dashboard)
+    # =====================================================
+    
+    def get_settings(self):
+        """Get all strategy settings from Supabase"""
+        try:
+            response = self.client.from_('strategy_settings').select('*').execute()
+            # Convert list of {key, value, ...} rows into a dict
+            settings = {}
+            for row in response.data:
+                settings[row['key']] = {
+                    'value': row['value'],
+                    'type': row.get('value_type', 'string'),
+                    'label': row.get('label', row['key']),
+                    'category': row.get('category', 'general'),
+                    'description': row.get('description', ''),
+                    'id': row.get('id')
+                }
+            return settings
+        except Exception as e:
+            logger.error(f"Error getting settings: {e}")
+            return {}
+    
+    def get_setting(self, key):
+        """Get a single setting value"""
+        try:
+            response = self.client.from_('strategy_settings').select('value,value_type').eq('key', key).execute()
+            if response.data:
+                row = response.data[0]
+                return self._cast_value(row['value'], row.get('value_type', 'string'))
+            return None
+        except Exception as e:
+            logger.error(f"Error getting setting {key}: {e}")
+            return None
+    
+    def upsert_setting(self, key, value, value_type='string', label=None, category='general', description=''):
+        """Create or update a setting"""
+        try:
+            data = {
+                'key': key,
+                'value': str(value),
+                'value_type': value_type,
+                'label': label or key,
+                'category': category,
+                'description': description,
+                'updated_at': datetime.now().isoformat()
+            }
+            response = self.client.from_('strategy_settings').upsert(data, on_conflict='key').execute()
+            logger.info(f"Setting saved: {key} = {value}")
+            return response.data[0] if response.data else None
+        except Exception as e:
+            logger.error(f"Error saving setting {key}: {e}")
+            return None
+    
+    def bulk_upsert_settings(self, settings_list):
+        """Bulk upsert multiple settings"""
+        try:
+            for s in settings_list:
+                s['value'] = str(s['value'])
+                s['updated_at'] = datetime.now().isoformat()
+            response = self.client.from_('strategy_settings').upsert(settings_list, on_conflict='key').execute()
+            logger.info(f"Bulk settings saved: {len(settings_list)} settings")
+            return response.data
+        except Exception as e:
+            logger.error(f"Error bulk saving settings: {e}")
+            return None
+    
+    def _cast_value(self, value, value_type):
+        """Cast a string value to its proper type"""
+        try:
+            if value_type == 'float':
+                return float(value)
+            elif value_type == 'int':
+                return int(float(value))
+            elif value_type == 'bool':
+                return value.lower() in ('true', '1', 'yes')
+            elif value_type == 'json':
+                import json
+                return json.loads(value)
+            return value
+        except:
+            return value

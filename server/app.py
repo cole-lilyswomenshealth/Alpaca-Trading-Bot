@@ -1221,12 +1221,26 @@ def get_autonomous_performance():
         return jsonify({'error': str(e)}), 500
 
 # ============================================================
-# STRATEGY SETTINGS API - Live config changes without restart
+# STRATEGY SETTINGS API - Supabase-backed, real-time
 # ============================================================
+
+# Settings schema: defines all available settings
+SETTINGS_SCHEMA = [
+    {'key': 'trading_enabled', 'value_type': 'bool', 'label': 'Trading Enabled', 'category': 'general', 'description': 'Master kill switch for all trading'},
+    {'key': 'fibonacci_enabled', 'value_type': 'bool', 'label': 'Fibonacci Sizing', 'category': 'fibonacci', 'description': 'Use Fibonacci sequence for position sizing'},
+    {'key': 'fibonacci_base', 'value_type': 'float', 'label': 'Fibonacci Base Qty', 'category': 'fibonacci', 'description': 'Base quantity for first buy (e.g. 0.1 = 0.1 shares)'},
+    {'key': 'fibonacci_max_iterations', 'value_type': 'int', 'label': 'Max Fibonacci Steps', 'category': 'fibonacci', 'description': 'Max buy orders before blocking further buys'},
+    {'key': 'fibonacci_symbol_bases', 'value_type': 'json', 'label': 'Symbol-Specific Bases', 'category': 'fibonacci', 'description': 'JSON object of per-symbol base overrides, e.g. {"ETH/USD": 0.01}'},
+    {'key': 'max_position_size', 'value_type': 'float', 'label': 'Max Position Size ($)', 'category': 'risk', 'description': 'Maximum dollar value for a single position'},
+    {'key': 'max_daily_loss', 'value_type': 'float', 'label': 'Max Daily Loss ($)', 'category': 'risk', 'description': 'Stop trading if daily loss exceeds this amount'},
+    {'key': 'max_open_positions', 'value_type': 'int', 'label': 'Max Open Positions', 'category': 'risk', 'description': 'Maximum number of simultaneous open positions'},
+    {'key': 'profit_protection_enabled', 'value_type': 'bool', 'label': 'Profit Protection', 'category': 'risk', 'description': 'Only sell positions that are in profit'},
+    {'key': 'profit_protection_threshold', 'value_type': 'float', 'label': 'Min Profit to Sell (%)', 'category': 'risk', 'description': 'Minimum profit percentage before allowing sell (0 = any profit)'},
+]
 
 @app.route('/api/settings', methods=['GET'])
 def get_settings():
-    """Get current strategy settings"""
+    """Get current strategy settings (reads from Supabase, falls back to .env)"""
     try:
         config = Config()
         settings = {
@@ -1238,96 +1252,111 @@ def get_settings():
             'max_position_size': config.MAX_POSITION_SIZE,
             'max_open_positions': config.MAX_OPEN_POSITIONS,
             'max_daily_loss': config.MAX_DAILY_LOSS,
-            'profit_protection_enabled': True  # Always on for now
+            'profit_protection_enabled': config.PROFIT_PROTECTION_ENABLED,
+            'profit_protection_threshold': config.PROFIT_PROTECTION_THRESHOLD,
         }
-        return jsonify({'success': True, 'settings': settings})
+        return jsonify({'success': True, 'settings': settings, 'schema': SETTINGS_SCHEMA})
     except Exception as e:
         logger.error(f"Error getting settings: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/settings', methods=['POST'])
 def update_settings():
-    """Update strategy settings live - writes to .env and reloads config"""
+    """Update strategy settings — saves to Supabase for real-time sync"""
     try:
         data = request.json
         logger.info(f"Updating settings: {data}")
-        
-        # Read current .env file
-        env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
-        if not os.path.exists(env_path):
-            env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
-        
-        with open(env_path, 'r') as f:
-            env_content = f.read()
-        
-        # Map of setting keys to .env variable names
-        updates = {}
-        
-        if 'trading_enabled' in data:
-            updates['TRADING_ENABLED'] = str(data['trading_enabled']).lower()
-        if 'fibonacci_enabled' in data:
-            updates['FIBONACCI_ENABLED'] = str(data['fibonacci_enabled']).lower()
-        if 'fibonacci_base' in data:
-            updates['FIBONACCI_BASE'] = str(data['fibonacci_base'])
-        if 'fibonacci_max_iterations' in data:
-            updates['FIBONACCI_MAX_ITERATIONS'] = str(int(data['fibonacci_max_iterations']))
-        if 'max_position_size' in data:
-            updates['MAX_POSITION_SIZE'] = str(data['max_position_size'])
-        if 'max_open_positions' in data:
-            updates['MAX_OPEN_POSITIONS'] = str(int(data['max_open_positions']))
-        if 'max_daily_loss' in data:
-            updates['MAX_DAILY_LOSS'] = str(data['max_daily_loss'])
-        
-        # Handle symbol bases
-        if 'fibonacci_symbol_bases' in data:
-            bases = data['fibonacci_symbol_bases']
-            if isinstance(bases, dict) and bases:
-                bases_str = ','.join(f"{sym}={val}" for sym, val in bases.items())
-            else:
-                bases_str = ''
-            updates['FIBONACCI_SYMBOL_BASES'] = bases_str
-        
-        # Update .env content
-        lines = env_content.split('\n')
-        new_lines = []
-        updated_keys = set()
-        
-        for line in lines:
-            stripped = line.strip()
-            if stripped and not stripped.startswith('#') and '=' in stripped:
-                key = stripped.split('=', 1)[0].strip()
-                if key in updates:
-                    new_lines.append(f"{key}={updates[key]}")
-                    updated_keys.add(key)
-                    continue
-            new_lines.append(line)
-        
-        # Add any new keys that weren't in the file
-        for key, value in updates.items():
-            if key not in updated_keys:
-                new_lines.append(f"{key}={value}")
-        
-        # Write back
-        with open(env_path, 'w') as f:
-            f.write('\n'.join(new_lines))
-        
-        # Reload config in memory
-        load_dotenv(env_path, override=True)
-        
-        # Update the live config objects
-        new_config = Config()
-        order_manager.config = new_config
-        risk_manager.config = new_config
-        
-        logger.info(f"Settings updated successfully: {list(updates.keys())}")
-        
+
+        from services.supabase_client import SupabaseClient
+        supabase = SupabaseClient()
+
+        if not supabase.is_connected():
+            return jsonify({'success': False, 'error': 'Supabase not connected'}), 500
+
+        # Build upsert list from incoming data
+        schema_map = {s['key']: s for s in SETTINGS_SCHEMA}
+        upsert_list = []
+
+        for key, value in data.items():
+            if key in schema_map:
+                s = schema_map[key]
+                # Convert dicts/lists to JSON string
+                if s['value_type'] == 'json' and not isinstance(value, str):
+                    import json
+                    value = json.dumps(value)
+                upsert_list.append({
+                    'key': key,
+                    'value': str(value),
+                    'value_type': s['value_type'],
+                    'label': s['label'],
+                    'category': s['category'],
+                    'description': s['description'],
+                })
+
+        if upsert_list:
+            supabase.bulk_upsert_settings(upsert_list)
+
+        # Clear config cache so next read picks up new values
+        order_manager.config._cache = {}
+        risk_manager.config._cache = {}
+
+        logger.info(f"Settings updated in Supabase: {list(data.keys())}")
+
         return jsonify({
             'success': True,
             'message': 'Settings updated',
-            'updated': list(updates.keys())
+            'updated': list(data.keys())
         })
     except Exception as e:
         logger.error(f"Error updating settings: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/settings/init', methods=['POST'])
+def init_settings():
+    """Initialize Supabase with default settings (run once)"""
+    try:
+        from services.supabase_client import SupabaseClient
+        supabase = SupabaseClient()
+
+        if not supabase.is_connected():
+            return jsonify({'success': False, 'error': 'Supabase not connected'}), 500
+
+        config = Config()
+        defaults = {
+            'trading_enabled': config._DEFAULTS.get('trading_enabled', True),
+            'fibonacci_enabled': config._DEFAULTS.get('fibonacci_enabled', True),
+            'fibonacci_base': config._DEFAULTS.get('fibonacci_base', 1.0),
+            'fibonacci_max_iterations': config._DEFAULTS.get('fibonacci_max_iterations', 10),
+            'fibonacci_symbol_bases': config._DEFAULTS.get('fibonacci_symbol_bases', {}),
+            'max_position_size': config._DEFAULTS.get('max_position_size', 10000),
+            'max_daily_loss': config._DEFAULTS.get('max_daily_loss', 500),
+            'max_open_positions': config._DEFAULTS.get('max_open_positions', 10),
+            'profit_protection_enabled': config._DEFAULTS.get('profit_protection_enabled', True),
+            'profit_protection_threshold': config._DEFAULTS.get('profit_protection_threshold', 0.0),
+        }
+
+        schema_map = {s['key']: s for s in SETTINGS_SCHEMA}
+        upsert_list = []
+
+        for key, value in defaults.items():
+            s = schema_map.get(key, {})
+            if s.get('value_type') == 'json' and not isinstance(value, str):
+                import json
+                value = json.dumps(value)
+            upsert_list.append({
+                'key': key,
+                'value': str(value),
+                'value_type': s.get('value_type', 'string'),
+                'label': s.get('label', key),
+                'category': s.get('category', 'general'),
+                'description': s.get('description', ''),
+            })
+
+        supabase.bulk_upsert_settings(upsert_list)
+
+        return jsonify({'success': True, 'message': 'Settings initialized', 'count': len(upsert_list)})
+    except Exception as e:
+        logger.error(f"Error initializing settings: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':

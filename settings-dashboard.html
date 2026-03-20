@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Trading Bot Settings</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0e27;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: #111638;
+            padding: 16px 20px;
+            border-bottom: 1px solid #2a3150;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header h1 {
+            font-size: 20px;
+            color: #00d4ff;
+        }
+
+        .status-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+
+        .status-dot.connected { background: #00ff88; }
+        .status-dot.disconnected { background: #ff4444; }
+
+        .status-text {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .save-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #111638;
+            border-top: 1px solid #2a3150;
+            padding: 12px 20px;
+            display: none;
+            z-index: 100;
+        }
+
+        .save-bar.visible { display: block; }
+
+        .save-bar-inner {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .save-bar .unsaved {
+            color: #ffaa00;
+            font-size: 14px;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-save {
+            background: #00d4ff;
+            color: #0a0e27;
+        }
+
+        .btn-save:hover { background: #00b8e6; }
+
+        .btn-discard {
+            background: transparent;
+            color: #888;
+            border: 1px solid #2a3150;
+        }
+
+        .btn-init {
+            background: #2a3150;
+            color: #00d4ff;
+            width: 100%;
+            padding: 14px;
+            margin-top: 12px;
+        }
+
+        .category {
+            margin-bottom: 24px;
+        }
+
+        .category-title {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #00d4ff;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #1a2040;
+        }
+
+        .setting-card {
+            background: #1a1f3a;
+            border: 1px solid #2a3150;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 10px;
+            transition: border-color 0.2s;
+        }
+
+        .setting-card.changed {
+            border-color: #ffaa00;
+        }
+
+        .setting-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .setting-label {
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        .setting-desc {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        /* Toggle switch */
+        .toggle {
+            position: relative;
+            width: 50px;
+            height: 28px;
+        }
+
+        .toggle input { opacity: 0; width: 0; height: 0; }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #2a3150;
+            border-radius: 28px;
+            transition: 0.3s;
+        }
+
+        .toggle-slider:before {
+            content: "";
+            position: absolute;
+            height: 22px; width: 22px;
+            left: 3px; bottom: 3px;
+            background: #e0e0e0;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+
+        .toggle input:checked + .toggle-slider {
+            background: #00d4ff;
+        }
+
+        .toggle input:checked + .toggle-slider:before {
+            transform: translateX(22px);
+        }
+
+        /* Number / text inputs */
+        .setting-input {
+            width: 100%;
+            padding: 10px 12px;
+            background: #0d1229;
+            border: 1px solid #2a3150;
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-size: 16px; /* prevents iOS zoom */
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .setting-input:focus {
+            border-color: #00d4ff;
+        }
+
+        .setting-input::placeholder {
+            color: #444;
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 200;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
+        .toast.show { opacity: 1; }
+        .toast.success { background: #00ff88; color: #0a0e27; }
+        .toast.error { background: #ff4444; color: #fff; }
+
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .loading-spinner {
+            width: 32px; height: 32px;
+            border: 3px solid #2a3150;
+            border-top-color: #00d4ff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .last-sync {
+            text-align: center;
+            font-size: 11px;
+            color: #444;
+            padding: 20px 0 80px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-row">
+            <h1>⚙️ Bot Settings</h1>
+            <div>
+                <span class="status-dot" id="statusDot"></span>
+                <span class="status-text" id="statusText">Connecting...</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="container" id="content">
+        <div class="loading">
+            <div class="loading-spinner"></div>
+            Loading settings...
+        </div>
+    </div>
+
+    <div class="save-bar" id="saveBar">
+        <div class="save-bar-inner">
+            <span class="unsaved" id="unsavedCount">1 unsaved change</span>
+            <div style="display:flex;gap:8px;">
+                <button class="btn btn-discard" onclick="discardChanges()">Discard</button>
+                <button class="btn btn-save" onclick="saveSettings()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const API_BASE = 'http://167.99.228.110:5000';
+
+        let currentSettings = {};
+        let pendingChanges = {};
+        let schema = [];
+
+        // ---- Init ----
+        async function init() {
+            try {
+                const res = await fetch(`${API_BASE}/api/settings`);
+                const data = await res.json();
+
+                if (data.success) {
+                    currentSettings = data.settings;
+                    schema = data.schema || [];
+                    setStatus(true);
+                    renderSettings();
+                } else {
+                    setStatus(false);
+                    showInitButton();
+                }
+            } catch (e) {
+                console.error(e);
+                setStatus(false);
+                document.getElementById('content').innerHTML =
+                    '<div class="loading">Cannot reach server at ' + API_BASE + '</div>';
+            }
+        }
+
+        function setStatus(connected) {
+            const dot = document.getElementById('statusDot');
+            const text = document.getElementById('statusText');
+            dot.className = 'status-dot ' + (connected ? 'connected' : 'disconnected');
+            text.textContent = connected ? 'Connected' : 'Disconnected';
+        }
+
+        function showInitButton() {
+            document.getElementById('content').innerHTML = `
+                <div class="loading">
+                    <p>Settings not found in Supabase yet.</p>
+                    <button class="btn btn-init" onclick="initSettings()">Initialize Default Settings</button>
+                </div>`;
+        }
+
+        async function initSettings() {
+            try {
+                const res = await fetch(`${API_BASE}/api/settings/init`, { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Settings initialized!', 'success');
+                    setTimeout(() => init(), 500);
+                } else {
+                    showToast(data.error || 'Init failed', 'error');
+                }
+            } catch (e) {
+                showToast('Connection error', 'error');
+            }
+        }
+
+        // ---- Render ----
+        function renderSettings() {
+            const categories = {};
+
+            // Group schema by category
+            schema.forEach(s => {
+                if (!categories[s.category]) categories[s.category] = [];
+                categories[s.category].push(s);
+            });
+
+            // Also include settings not in schema
+            Object.keys(currentSettings).forEach(key => {
+                if (!schema.find(s => s.key === key)) {
+                    const cat = 'other';
+                    if (!categories[cat]) categories[cat] = [];
+                    categories[cat].push({
+                        key, label: key, value_type: typeof currentSettings[key] === 'boolean' ? 'bool' : 'string',
+                        category: cat, description: ''
+                    });
+                }
+            });
+
+            const categoryLabels = {
+                general: '🎛️ General',
+                fibonacci: '🔢 Fibonacci Position Sizing',
+                risk: '🛡️ Risk Management',
+                other: '📦 Other'
+            };
+
+            const order = ['general', 'fibonacci', 'risk', 'other'];
+            let html = '';
+
+            order.forEach(cat => {
+                if (!categories[cat]) return;
+                html += `<div class="category">
+                    <div class="category-title">${categoryLabels[cat] || cat}</div>`;
+
+                categories[cat].forEach(s => {
+                    const val = currentSettings[s.key];
+                    html += renderSettingCard(s, val);
+                });
+
+                html += '</div>';
+            });
+
+            html += `<div class="last-sync">Last synced: ${new Date().toLocaleTimeString()}</div>`;
+
+            document.getElementById('content').innerHTML = html;
+        }
+
+        function renderSettingCard(s, value) {
+            let inputHtml = '';
+
+            if (s.value_type === 'bool') {
+                inputHtml = `
+                    <label class="toggle">
+                        <input type="checkbox" ${value ? 'checked' : ''}
+                               onchange="onChange('${s.key}', this.checked, 'bool')">
+                        <span class="toggle-slider"></span>
+                    </label>`;
+
+                return `<div class="setting-card" id="card-${s.key}">
+                    <div class="setting-header">
+                        <div>
+                            <div class="setting-label">${s.label}</div>
+                            <div class="setting-desc">${s.description}</div>
+                        </div>
+                        ${inputHtml}
+                    </div>
+                </div>`;
+            }
+
+            if (s.value_type === 'json') {
+                const strVal = typeof value === 'object' ? JSON.stringify(value, null, 2) : (value || '{}');
+                inputHtml = `<textarea class="setting-input" rows="3"
+                    oninput="onChange('${s.key}', this.value, 'json')"
+                    style="font-family:monospace;font-size:14px;resize:vertical;">${strVal}</textarea>`;
+            } else {
+                const inputType = (s.value_type === 'float' || s.value_type === 'int') ? 'number' : 'text';
+                const step = s.value_type === 'float' ? '0.01' : '1';
+                inputHtml = `<input type="${inputType}" class="setting-input"
+                    value="${value != null ? value : ''}"
+                    step="${step}"
+                    oninput="onChange('${s.key}', this.value, '${s.value_type}')">`;
+            }
+
+            return `<div class="setting-card" id="card-${s.key}">
+                <div class="setting-label">${s.label}</div>
+                <div class="setting-desc">${s.description}</div>
+                ${inputHtml}
+            </div>`;
+        }
+
+        // ---- Change tracking ----
+        function onChange(key, value, type) {
+            // Cast value
+            if (type === 'float') value = parseFloat(value) || 0;
+            else if (type === 'int') value = parseInt(value) || 0;
+            else if (type === 'bool') value = !!value;
+            else if (type === 'json') {
+                try { value = JSON.parse(value); } catch { return; } // don't save invalid JSON
+            }
+
+            // Check if actually changed from original
+            const original = currentSettings[key];
+            const changed = JSON.stringify(value) !== JSON.stringify(original);
+
+            if (changed) {
+                pendingChanges[key] = value;
+            } else {
+                delete pendingChanges[key];
+            }
+
+            // Highlight card
+            const card = document.getElementById('card-' + key);
+            if (card) card.classList.toggle('changed', changed);
+
+            updateSaveBar();
+        }
+
+        function updateSaveBar() {
+            const count = Object.keys(pendingChanges).length;
+            const bar = document.getElementById('saveBar');
+            bar.classList.toggle('visible', count > 0);
+            document.getElementById('unsavedCount').textContent =
+                count === 1 ? '1 unsaved change' : `${count} unsaved changes`;
+        }
+
+        function discardChanges() {
+            pendingChanges = {};
+            renderSettings();
+            updateSaveBar();
+        }
+
+        async function saveSettings() {
+            if (Object.keys(pendingChanges).length === 0) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/settings`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(pendingChanges)
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    // Merge changes into current
+                    Object.assign(currentSettings, pendingChanges);
+                    pendingChanges = {};
+                    renderSettings();
+                    updateSaveBar();
+                    showToast('Settings saved!', 'success');
+                } else {
+                    showToast(data.error || 'Save failed', 'error');
+                }
+            } catch (e) {
+                showToast('Connection error', 'error');
+            }
+        }
+
+        function showToast(msg, type) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast ' + type + ' show';
+            setTimeout(() => t.classList.remove('show'), 2500);
+        }
+
+        // Start
+        init();
+    </script>
+</body>
+</html>
