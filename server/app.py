@@ -182,12 +182,54 @@ def get_positions():
 
 @app.route('/api/orders', methods=['GET'])
 def get_orders():
-    """Get order history"""
+    """Get order history, optionally filtered to today's orders only"""
     try:
         limit = request.args.get('limit', 50, type=int)
         status = request.args.get('status', 'all')
-        result = order_manager.get_order_history(limit=limit)
-        return jsonify(result)
+        today_only = request.args.get('today', 'false').lower() == 'true'
+        
+        if today_only:
+            # Use Alpaca's 'after' filter to only get today's orders
+            from datetime import timezone, timedelta
+            now = datetime.now(timezone.utc)
+            # Start of today in US/Eastern (market timezone)
+            import zoneinfo
+            try:
+                eastern = zoneinfo.ZoneInfo('America/New_York')
+            except Exception:
+                import pytz
+                eastern = pytz.timezone('America/New_York')
+            
+            now_eastern = datetime.now(eastern)
+            start_of_today = now_eastern.replace(hour=0, minute=0, second=0, microsecond=0)
+            
+            orders = alpaca_client.get_orders(status='all', limit=limit, after=start_of_today)
+            
+            orders_data = []
+            for order in orders:
+                orders_data.append({
+                    'id': order.id,
+                    'symbol': order.symbol,
+                    'qty': float(order.qty),
+                    'filled_qty': float(order.filled_qty) if order.filled_qty else 0,
+                    'side': order.side.value,
+                    'type': order.type.value,
+                    'status': order.status.value,
+                    'limit_price': float(order.limit_price) if order.limit_price else None,
+                    'stop_price': float(order.stop_price) if order.stop_price else None,
+                    'filled_avg_price': float(order.filled_avg_price) if order.filled_avg_price else None,
+                    'submitted_at': order.submitted_at.isoformat() if order.submitted_at else None,
+                    'filled_at': order.filled_at.isoformat() if order.filled_at else None
+                })
+            
+            return jsonify({
+                'success': True,
+                'orders': orders_data,
+                'date_filter': start_of_today.isoformat()
+            })
+        else:
+            result = order_manager.get_order_history(limit=limit)
+            return jsonify(result)
     except Exception as e:
         logger.error(f"Error getting orders: {str(e)}")
         return jsonify({'error': str(e)}), 500
@@ -449,6 +491,143 @@ def get_closed_positions():
         
     except Exception as e:
         logger.error(f"Error getting closed positions: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/daily-performance', methods=['GET'])
+def get_daily_performance():
+    """Get today's performance data from Alpaca (source of truth).
+    
+    Combines portfolio history for P&L with today's filled orders.
+    This ensures data persists correctly across page refreshes.
+    """
+    try:
+        import zoneinfo
+        try:
+            eastern = zoneinfo.ZoneInfo('America/New_York')
+        except Exception:
+            import pytz
+            eastern = pytz.timezone('America/New_York')
+        
+        now_eastern = datetime.now(eastern)
+        start_of_today = now_eastern.replace(hour=0, minute=0, second=0, microsecond=0)
+        today_str = now_eastern.strftime('%Y-%m-%d')
+        
+        # 1) Get today's filled orders from Alpaca (with date filter)
+        all_orders = alpaca_client.get_orders(status='all', limit=500, after=start_of_today)
+        
+        filled_orders = []
+        for order in all_orders:
+            if order.status.value != 'filled':
+                continue
+            filled_orders.append({
+                'id': order.id,
+                'symbol': order.symbol,
+                'qty': float(order.qty),
+                'filled_qty': float(order.filled_qty) if order.filled_qty else 0,
+                'side': order.side.value,
+                'type': order.type.value,
+                'status': order.status.value,
+                'filled_avg_price': float(order.filled_avg_price) if order.filled_avg_price else None,
+                'submitted_at': order.submitted_at.isoformat() if order.submitted_at else None,
+                'filled_at': order.filled_at.isoformat() if order.filled_at else None
+            })
+        
+        buy_orders = [o for o in filled_orders if o['side'] == 'buy']
+        sell_orders = [o for o in filled_orders if o['side'] == 'sell']
+        
+        total_buy_capital = sum((o['filled_avg_price'] or 0) * (o['filled_qty'] or 0) for o in buy_orders)
+        
+        # 2) Try to get closed positions from Supabase for accurate P&L
+        closed_positions = []
+        supabase_available = False
+        try:
+            from services.supabase_client import SupabaseClient
+            supabase = SupabaseClient()
+            if supabase.is_connected():
+                supabase_available = True
+                query = supabase.client.from_('positions').select('*').eq('status', 'closed')
+                response = query.order('closed_at', desc=True).limit(200).execute()
+                
+                for pos in response.data:
+                    closed_at = pos.get('closed_at', '')
+                    if closed_at and closed_at[:10] == today_str:
+                        entry_price = float(pos['entry_price']) if pos.get('entry_price') else 0
+                        close_price = float(pos['close_price']) if pos.get('close_price') else 0
+                        qty = pos.get('quantity', 0)
+                        pnl = float(pos['pnl']) if pos.get('pnl') else 0
+                        pnl_pct = ((close_price - entry_price) / entry_price * 100) if entry_price else 0
+                        
+                        closed_positions.append({
+                            'symbol': pos['symbol'],
+                            'qty': qty,
+                            'open_price': entry_price,
+                            'close_price': close_price,
+                            'pnl': pnl,
+                            'pnl_pct': round(pnl_pct, 2),
+                            'opened_at': pos.get('opened_at'),
+                            'closed_at': closed_at,
+                            'source': pos.get('source', 'manual')
+                        })
+        except Exception as e:
+            logger.warning(f"Supabase unavailable for daily performance: {e}")
+        
+        # 3) If no Supabase data, reconstruct closed positions from Alpaca orders
+        if not closed_positions:
+            # Match buy/sell pairs from today's orders
+            buys_by_symbol = {}
+            for o in buy_orders:
+                sym = o['symbol']
+                if sym not in buys_by_symbol:
+                    buys_by_symbol[sym] = []
+                buys_by_symbol[sym].append(o)
+            
+            for o in sell_orders:
+                sym = o['symbol']
+                if sym in buys_by_symbol and buys_by_symbol[sym]:
+                    buy = buys_by_symbol[sym].pop(0)
+                    buy_price = buy['filled_avg_price'] or 0
+                    sell_price = o['filled_avg_price'] or 0
+                    matched_qty = min(buy['filled_qty'], o['filled_qty'])
+                    pnl = (sell_price - buy_price) * matched_qty
+                    pnl_pct = ((sell_price - buy_price) / buy_price * 100) if buy_price else 0
+                    
+                    closed_positions.append({
+                        'symbol': sym,
+                        'qty': matched_qty,
+                        'open_price': round(buy_price, 2),
+                        'close_price': round(sell_price, 2),
+                        'pnl': round(pnl, 2),
+                        'pnl_pct': round(pnl_pct, 2),
+                        'opened_at': buy['filled_at'],
+                        'closed_at': o['filled_at'],
+                        'source': 'alpaca'
+                    })
+        
+        # 4) Calculate summary metrics
+        total_pnl = sum(p['pnl'] for p in closed_positions)
+        capital_deployed = sum(p['open_price'] * p['qty'] for p in closed_positions)
+        return_on_capital = (total_pnl / capital_deployed * 100) if capital_deployed > 0 else 0
+        
+        return jsonify({
+            'success': True,
+            'date': today_str,
+            'summary': {
+                'total_pnl': round(total_pnl, 2),
+                'capital_deployed': round(capital_deployed, 2),
+                'return_on_capital': round(return_on_capital, 2),
+                'closed_trade_count': len(closed_positions),
+                'buy_order_count': len(buy_orders),
+                'total_buy_capital': round(total_buy_capital, 2),
+            },
+            'closed_positions': closed_positions,
+            'buy_orders': buy_orders,
+            'source': 'supabase' if supabase_available else 'alpaca',
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        logger.error(f"Error getting daily performance: {str(e)}")
         import traceback
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500

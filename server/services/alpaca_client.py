@@ -38,8 +38,8 @@ class AlpacaClient:
         except Exception:
             return None
     
-    def get_orders(self, status='all', limit=100):
-        """Get orders"""
+    def get_orders(self, status='all', limit=100, after=None):
+        """Get orders, optionally filtered by date"""
         from alpaca.trading.requests import GetOrdersRequest
         from alpaca.trading.enums import QueryOrderStatus
         
@@ -49,10 +49,14 @@ class AlpacaClient:
             'all': QueryOrderStatus.ALL
         }
         
-        request = GetOrdersRequest(
-            status=status_map.get(status, QueryOrderStatus.ALL),
-            limit=limit
-        )
+        kwargs = {
+            'status': status_map.get(status, QueryOrderStatus.ALL),
+            'limit': limit,
+        }
+        if after is not None:
+            kwargs['after'] = after
+        
+        request = GetOrdersRequest(**kwargs)
         return self.trading_client.get_orders(request)
     
     def submit_market_order(self, symbol, qty, side, time_in_force='day'):
