@@ -657,31 +657,35 @@ def get_daily_performance():
 
 @app.route('/api/portfolio-history', methods=['GET'])
 def get_portfolio_history():
-    """Get portfolio history with P&L directly from Alpaca"""
+    """Get portfolio history with P&L directly from Alpaca REST API"""
     try:
-        period = request.args.get('period', '1M')  # 1D, 1W, 1M, 3M, 1A, all
-        timeframe = request.args.get('timeframe', '1D')  # 1Min, 5Min, 15Min, 1H, 1D
+        import requests as req
+        period = request.args.get('period', '1M')
+        timeframe = request.args.get('timeframe', '1D')
         
-        # Get portfolio history from Alpaca
-        history = alpaca_client.get_portfolio_history(
-            period=period,
-            timeframe=timeframe,
-            extended_hours=False
-        )
-        
-        # Convert to JSON-friendly format
-        history_data = {
-            'timestamp': history.timestamp,
-            'equity': history.equity,
-            'profit_loss': history.profit_loss,
-            'profit_loss_pct': history.profit_loss_pct,
-            'base_value': history.base_value,
-            'timeframe': history.timeframe
+        config = Config()
+        base = config.ALPACA_BASE_URL.rstrip('/v2').rstrip('/')
+        url = f"{base}/v2/account/portfolio/history"
+        headers = {
+            'APCA-API-KEY-ID': config.ALPACA_API_KEY,
+            'APCA-API-SECRET-KEY': config.ALPACA_SECRET_KEY,
         }
+        params = {'period': period, 'timeframe': timeframe, 'extended_hours': 'false'}
+        
+        resp = req.get(url, headers=headers, params=params, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
         
         return jsonify({
             'success': True,
-            'history': history_data,
+            'history': {
+                'timestamp': data.get('timestamp', []),
+                'equity': data.get('equity', []),
+                'profit_loss': data.get('profit_loss', []),
+                'profit_loss_pct': data.get('profit_loss_pct', []),
+                'base_value': data.get('base_value', 0),
+                'timeframe': data.get('timeframe', '1D'),
+            },
             'source': 'alpaca'
         })
     except Exception as e:

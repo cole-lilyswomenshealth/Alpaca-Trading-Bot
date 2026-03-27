@@ -22,7 +22,7 @@
         .status-indicator.off{background:var(--red);box-shadow:0 0 8px rgba(239,68,68,.5)}
         .status-indicator.checking{background:var(--orange);animation:pulse 1.2s infinite}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-        .topbar{height:44px;background:var(--sidebar);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0}
+        .topbar{height:44px;background:var(--sidebar);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0;position:relative}
         .topbar-title{font-size:14px;font-weight:600;color:var(--text-bright)}
         .topbar-right{margin-left:auto;display:flex;align-items:center;gap:12px;font-size:12px;color:var(--muted)}
         .topbar-stat{display:flex;align-items:center;gap:6px}.topbar-stat .val{font-weight:600;color:var(--text-bright)}
@@ -96,6 +96,7 @@
 <div class="main">
     <div class="topbar">
         <span class="topbar-title" id="pageTitle">Portfolio</span>
+        <span style="position:absolute;left:50%;transform:translateX(-50%);font-size:15px;font-weight:700;color:var(--text-bright);letter-spacing:.5px">Maroon Investments</span>
         <div class="topbar-right">
             <div class="topbar-stat">Equity <span class="val" id="tbEquity">--</span></div>
             <div class="topbar-stat">Day P&L <span class="val" id="tbDayPl">--</span></div>
@@ -219,59 +220,66 @@ async function loadAccount(){
 async function loadCharts(){
     try{
         const d=await api('/api/portfolio-history?period=1M&timeframe=1D');
-        if(!d.success||!d.history)return;
+        if(!d.success||!d.history){console.error('Chart data error:',d.error);return}
         const h=d.history;
-        // Line chart — portfolio value over 1 month
-        const canvas=$('lineChart');const ctx=canvas.getContext('2d');
-        canvas.width=canvas.parentElement.offsetWidth;canvas.height=160;
-        const eq=h.equity||[];const ts=h.timestamp||[];
-        if(!eq.length)return;
-        const minV=Math.min(...eq)*0.998;const maxV=Math.max(...eq)*1.002;const range=maxV-minV||1;
-        const w=canvas.width;const ht=canvas.height;const pad=30;
-        ctx.clearRect(0,0,w,ht);
-        // Grid lines
-        ctx.strokeStyle='rgba(37,42,58,.6)';ctx.lineWidth=1;
-        for(let i=0;i<4;i++){const y=pad+(ht-pad*2)*i/3;ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(w-10,y);ctx.stroke()}
-        // Line
-        ctx.beginPath();ctx.strokeStyle='#3b82f6';ctx.lineWidth=2;
-        const gradient=ctx.createLinearGradient(0,0,0,ht);gradient.addColorStop(0,'rgba(59,130,246,.15)');gradient.addColorStop(1,'rgba(59,130,246,0)');
-        const pts=[];
-        eq.forEach((v,i)=>{const x=pad+(w-pad-10)*i/(eq.length-1||1);const y=pad+(ht-pad*2)*(1-(v-minV)/range);pts.push({x,y});if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)});
-        ctx.stroke();
-        // Fill
-        ctx.lineTo(pts[pts.length-1].x,ht-pad);ctx.lineTo(pts[0].x,ht-pad);ctx.closePath();ctx.fillStyle=gradient;ctx.fill();
-        // Labels
-        ctx.fillStyle='#5c6478';ctx.font='10px Inter,sans-serif';
-        ctx.fillText(fmt(maxV),0,pad-4);ctx.fillText(fmt(minV),0,ht-pad+12);
-        // Date labels
-        if(ts.length>1){
-            const first=new Date(ts[0]*1000);const last=new Date(ts[ts.length-1]*1000);
-            ctx.fillText(first.toLocaleDateString('en-US',{month:'short',day:'numeric'}),pad,ht-4);
-            const lastLabel=last.toLocaleDateString('en-US',{month:'short',day:'numeric'});
-            ctx.fillText(lastLabel,w-ctx.measureText(lastLabel).width-10,ht-4);
-        }
+        const eq=(h.equity||[]).filter(v=>v!=null);
+        const ts=(h.timestamp||[]);
+        const pl=(h.profit_loss||[]);
 
-        // Bar chart — daily P&L this week
-        const pl=h.profit_loss||[];
-        const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-        const now=new Date();const dow=now.getDay();
-        // Get last 5 trading days (Mon-Fri of this week)
-        const weekPl=[];const weekLabels=[];
-        const startIdx=Math.max(0,pl.length-5);
-        for(let i=startIdx;i<pl.length;i++){
-            weekPl.push(pl[i]||0);
-            if(ts[i])weekLabels.push(dayNames[new Date(ts[i]*1000).getDay()]);
-            else weekLabels.push('--');
-        }
-        if(!weekPl.length)return;
-        const maxBar=Math.max(...weekPl.map(Math.abs),1);
-        let bh='';
-        weekPl.forEach((v,i)=>{
-            const pctH=Math.abs(v)/maxBar*100;
-            const color=v>=0?'var(--green)':'var(--red)';
-            bh+=`<div class="bar-col"><div class="bar-val" style="color:${color}">${v>=0?'+':''}${fmt(v)}</div><div class="bar" style="height:${Math.max(pctH,3)}%;background:${color}"></div><div class="bar-label">${weekLabels[i]||''}</div></div>`;
-        });
-        $('barChart').innerHTML=bh;
+        // ── Line chart: portfolio value ──
+        if(eq.length>1){
+            const canvas=$('lineChart');const ctx=canvas.getContext('2d');
+            const dpr=window.devicePixelRatio||1;
+            const rect=canvas.parentElement.getBoundingClientRect();
+            canvas.width=rect.width*dpr;canvas.height=160*dpr;
+            canvas.style.width=rect.width+'px';canvas.style.height='160px';
+            ctx.scale(dpr,dpr);
+            const w=rect.width;const ht=160;const pad=40;const padR=10;
+            const minV=Math.min(...eq)*0.999;const maxV=Math.max(...eq)*1.001;const range=maxV-minV||1;
+            ctx.clearRect(0,0,w,ht);
+            // Grid
+            ctx.strokeStyle='rgba(37,42,58,.5)';ctx.lineWidth=0.5;
+            for(let i=0;i<=3;i++){const y=pad-10+(ht-pad)*i/3;ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(w-padR,y);ctx.stroke();
+                ctx.fillStyle='#5c6478';ctx.font='10px Inter,sans-serif';
+                const label=maxV-range*i/3;ctx.fillText('$'+label.toFixed(0),0,y+3)}
+            // Line + fill
+            const gradient=ctx.createLinearGradient(0,0,0,ht);gradient.addColorStop(0,'rgba(59,130,246,.2)');gradient.addColorStop(1,'rgba(59,130,246,0)');
+            ctx.beginPath();
+            const pts=[];
+            eq.forEach((v,i)=>{const x=pad+(w-pad-padR)*i/(eq.length-1);const y=(pad-10)+(ht-pad)*(1-(v-minV)/range);pts.push({x,y});if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)});
+            ctx.strokeStyle='#3b82f6';ctx.lineWidth=2;ctx.stroke();
+            ctx.lineTo(pts[pts.length-1].x,ht);ctx.lineTo(pts[0].x,ht);ctx.closePath();ctx.fillStyle=gradient;ctx.fill();
+            // Dot on last point
+            const last=pts[pts.length-1];ctx.beginPath();ctx.arc(last.x,last.y,4,0,Math.PI*2);ctx.fillStyle='#3b82f6';ctx.fill();ctx.strokeStyle='#0c0e14';ctx.lineWidth=2;ctx.stroke();
+            // Date labels
+            ctx.fillStyle='#5c6478';ctx.font='10px Inter,sans-serif';
+            if(ts.length>1){
+                const fd=new Date(ts[0]*1000).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+                const ld=new Date(ts[ts.length-1]*1000).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+                ctx.fillText(fd,pad,ht-2);ctx.fillText(ld,w-ctx.measureText(ld).width-padR,ht-2);
+            }
+        }else{$('lineChart').parentElement.innerHTML='<div class="empty">Not enough data for chart yet</div>'}
+
+        // ── Bar chart: daily P&L this week ──
+        if(pl.length>0){
+            const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+            const count=Math.min(pl.length,5);
+            const startIdx=pl.length-count;
+            const weekPl=[];const weekLabels=[];
+            for(let i=startIdx;i<pl.length;i++){
+                weekPl.push(pl[i]||0);
+                weekLabels.push(ts[i]?dayNames[new Date(ts[i]*1000).getDay()]:'--');
+            }
+            const maxBar=Math.max(...weekPl.map(Math.abs),0.01);
+            let bh='';
+            weekPl.forEach((v,i)=>{
+                const pctH=Math.min(Math.abs(v)/maxBar*100,100);
+                const color=v>=0?'var(--green)':'var(--red)';
+                const sign=v>=0?'+':'';
+                bh+=`<div class="bar-col"><div class="bar-val" style="color:${color}">${sign}$${Math.abs(v).toFixed(2)}</div><div class="bar" style="height:${Math.max(pctH,5)}%;background:${color}"></div><div class="bar-label">${weekLabels[i]}</div></div>`;
+            });
+            $('barChart').innerHTML=bh;
+        }else{$('barChart').innerHTML='<div class="empty">No P&L data yet</div>'}
     }catch(e){console.error('Chart error:',e)}
 }
 
