@@ -1638,8 +1638,14 @@ ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 @app.route('/')
 def index():
-    """Serve portfolio dashboard"""
-    return send_from_directory(ROOT_DIR, 'portfolio.html')
+    """Serve main dashboard"""
+    return send_from_directory(ROOT_DIR, 'dashboard.html')
+
+@app.route('/dashboard')
+@app.route('/dashboard.html')
+def dashboard():
+    """Serve main dashboard"""
+    return send_from_directory(ROOT_DIR, 'dashboard.html')
 
 @app.route('/daily-summary.html')
 def daily_summary():
