@@ -7,24 +7,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
-        :root{
-            --bg:#0c0e14;--sidebar:#12151e;--panel:#161a25;--panel2:#1c2030;
-            --border:#252a3a;--border-light:#2e3448;
-            --text:#d1d5e0;--text-bright:#eef0f6;--muted:#5c6478;
-            --accent:#3b82f6;--accent-dim:rgba(59,130,246,.12);
-            --green:#22c55e;--green-dim:rgba(34,197,94,.1);
-            --red:#ef4444;--red-dim:rgba(239,68,68,.1);
-            --orange:#f59e0b;--orange-dim:rgba(245,158,11,.1);
-        }
+        :root{--bg:#0c0e14;--sidebar:#12151e;--panel:#161a25;--panel2:#1c2030;--border:#252a3a;--text:#d1d5e0;--text-bright:#eef0f6;--muted:#5c6478;--accent:#3b82f6;--accent-dim:rgba(59,130,246,.12);--green:#22c55e;--green-dim:rgba(34,197,94,.1);--red:#ef4444;--red-dim:rgba(239,68,68,.1);--orange:#f59e0b;--orange-dim:rgba(245,158,11,.1)}
         body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;-webkit-font-smoothing:antialiased}
-
-        /* ── Sidebar ── */
         .sidebar{width:64px;background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:12px 0;flex-shrink:0;z-index:10}
         .sidebar-logo{width:36px;height:36px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;font-weight:700;font-size:14px;color:#fff}
         .sidebar-nav{display:flex;flex-direction:column;gap:4px;flex:1;width:100%}
         .nav-item{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 0;cursor:pointer;color:var(--muted);transition:all .15s;position:relative;font-size:10px;font-weight:500}
-        .nav-item:hover{color:var(--text)}
-        .nav-item.active{color:var(--accent)}
+        .nav-item:hover{color:var(--text)}.nav-item.active{color:var(--accent)}
         .nav-item.active::before{content:'';position:absolute;left:0;top:8px;bottom:8px;width:3px;background:var(--accent);border-radius:0 3px 3px 0}
         .nav-item svg{width:20px;height:20px;stroke-width:1.8}
         .sidebar-bottom{margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:8px;padding-bottom:8px}
@@ -33,107 +22,53 @@
         .status-indicator.off{background:var(--red);box-shadow:0 0 8px rgba(239,68,68,.5)}
         .status-indicator.checking{background:var(--orange);animation:pulse 1.2s infinite}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-
-        /* ── Top Bar ── */
         .topbar{height:44px;background:var(--sidebar);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0}
         .topbar-title{font-size:14px;font-weight:600;color:var(--text-bright)}
-        .topbar-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;letter-spacing:.5px}
-        .topbar-badge.paper{background:var(--orange-dim);color:var(--orange)}
-        .topbar-badge.live{background:var(--green-dim);color:var(--green)}
         .topbar-right{margin-left:auto;display:flex;align-items:center;gap:12px;font-size:12px;color:var(--muted)}
-        .topbar-stat{display:flex;align-items:center;gap:6px}
-        .topbar-stat .val{font-weight:600;color:var(--text-bright)}
-
-        /* ── Main Area ── */
+        .topbar-stat{display:flex;align-items:center;gap:6px}.topbar-stat .val{font-weight:600;color:var(--text-bright)}
         .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-        .content{flex:1;overflow-y:auto;padding:16px;display:none}
-        .content.active{display:block}
-
-        /* ── Panels / Cards ── */
+        .content{flex:1;overflow-y:auto;padding:16px;display:none}.content.active{display:block}
         .panel{background:var(--panel);border:1px solid var(--border);border-radius:8px;margin-bottom:12px;overflow:hidden}
         .panel-header{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--panel2)}
         .panel-title{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
-        .panel-body{padding:14px}
-        .panel-body.no-pad{padding:0}
-
-        /* ── Grid ── */
-        .grid{display:grid;gap:12px}
-        .g2{grid-template-columns:1fr 1fr}
-        .g3{grid-template-columns:1fr 1fr 1fr}
-        .g4{grid-template-columns:1fr 1fr 1fr 1fr}
-        .g-main{grid-template-columns:2fr 1fr}
-
-        /* ── Stat Blocks ── */
-        .stat-block{padding:14px;text-align:center}
-        .stat-block .val{font-size:22px;font-weight:700;letter-spacing:-.3px}
-        .stat-block .lbl{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
+        .panel-body{padding:14px}.panel-body.no-pad{padding:0}
+        .grid{display:grid;gap:12px}.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr 1fr}.g4{grid-template-columns:1fr 1fr 1fr 1fr}.g-main{grid-template-columns:2fr 1fr}
+        .stat-block{padding:14px;text-align:center}.stat-block .val{font-size:22px;font-weight:700;letter-spacing:-.3px}.stat-block .lbl{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
         .up{color:var(--green)}.down{color:var(--red)}.flat{color:var(--text-bright)}
-
-        /* ── Table ── */
         table{width:100%;border-collapse:collapse;font-size:12px}
         th{text-align:left;padding:8px 12px;color:var(--muted);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;background:var(--panel2);border-bottom:1px solid var(--border);position:sticky;top:0}
-        td{padding:8px 12px;border-bottom:1px solid rgba(37,42,58,.4)}
-        tr:hover td{background:rgba(59,130,246,.03)}
-        .sym{font-weight:600;color:var(--text-bright)}
-
-        /* ── Form ── */
+        td{padding:8px 12px;border-bottom:1px solid rgba(37,42,58,.4)}tr:hover td{background:rgba(59,130,246,.03)}.sym{font-weight:600;color:var(--text-bright)}
         label{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px}
-        input,select{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:6px;font-size:13px;font-family:inherit;outline:none;transition:border .2s}
-        input:focus,select:focus{border-color:var(--accent)}
-        .field{margin-bottom:14px}
-        .row{display:flex;gap:12px}.row>div{flex:1}
-
-        /* ── Toggle ── */
-        .toggle-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid rgba(37,42,58,.4)}
-        .toggle-row:last-child{border-bottom:none}
-        .t-label{font-size:13px;font-weight:500;color:var(--text-bright)}
-        .t-desc{font-size:11px;color:var(--muted);margin-top:2px}
-        .toggle{width:40px;height:22px;background:var(--border);border-radius:11px;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0}
-        .toggle.on{background:var(--accent)}
-        .toggle::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
-        .toggle.on::after{transform:translateX(18px)}
-
-        /* ── Buttons ── */
-        .btn{padding:7px 14px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
-        .btn:hover{filter:brightness(1.1)}
-        .btn-accent{background:var(--accent);color:#fff}
-        .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
-        .btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
-        .btn-red{background:var(--red);color:#fff}
-        .btn-sm{padding:4px 8px;font-size:10px}
-
-        /* ── Badges ── */
-        .badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600}
-        .b-green{background:var(--green-dim);color:var(--green)}
-        .b-red{background:var(--red-dim);color:var(--red)}
-        .b-orange{background:var(--orange-dim);color:var(--orange)}
-        .b-blue{background:var(--accent-dim);color:var(--accent)}
-
+        input,select{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:6px;font-size:13px;font-family:inherit;outline:none;transition:border .2s}input:focus,select:focus{border-color:var(--accent)}
+        .field{margin-bottom:14px}.row{display:flex;gap:12px}.row>div{flex:1}
+        .toggle-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid rgba(37,42,58,.4)}.toggle-row:last-child{border-bottom:none}
+        .t-label{font-size:13px;font-weight:500;color:var(--text-bright)}.t-desc{font-size:11px;color:var(--muted);margin-top:2px}
+        .toggle{width:40px;height:22px;background:var(--border);border-radius:11px;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0}.toggle.on{background:var(--accent)}
+        .toggle::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}.toggle.on::after{transform:translateX(18px)}
+        .btn{padding:7px 14px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}.btn:hover{filter:brightness(1.1)}
+        .btn-accent{background:var(--accent);color:#fff}.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}.btn-red{background:var(--red);color:#fff}.btn-sm{padding:4px 8px;font-size:10px}
+        .badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600}.b-green{background:var(--green-dim);color:var(--green)}.b-red{background:var(--red-dim);color:var(--red)}.b-orange{background:var(--orange-dim);color:var(--orange)}
         .empty{text-align:center;padding:28px;color:var(--muted);font-size:12px}
-        .toast{position:fixed;bottom:20px;right:20px;padding:12px 20px;border-radius:8px;font-size:12px;font-weight:500;z-index:1000;animation:fadeUp .3s;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.4)}
-        .toast.ok{background:var(--green)}.toast.err{background:var(--red)}
+        .toast{position:fixed;bottom:20px;right:20px;padding:12px 20px;border-radius:8px;font-size:12px;font-weight:500;z-index:1000;animation:fadeUp .3s;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.4)}.toast.ok{background:var(--green)}.toast.err{background:var(--red)}
         @keyframes fadeUp{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
-
-        .scroll-table{max-height:320px;overflow-y:auto}
-        .hint{font-size:11px;color:var(--muted);margin-top:4px}
-
-        @media(max-width:768px){
-            .sidebar{width:48px}.nav-item span{display:none}
-            .g2,.g3,.g4,.g-main{grid-template-columns:1fr}
-            .row{flex-direction:column}
-            .topbar{padding:0 10px}
-        }
+        .scroll-table{max-height:320px;overflow-y:auto}.hint{font-size:11px;color:var(--muted);margin-top:4px}
+        /* Charts */
+        .chart-container{position:relative;height:180px;padding:10px 0}
+        .bar-chart{display:flex;align-items:flex-end;justify-content:space-around;height:140px;padding:0 10px}
+        .bar-col{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}
+        .bar{width:32px;border-radius:4px 4px 0 0;transition:height .4s;min-height:2px}
+        .bar-label{font-size:10px;color:var(--muted)}.bar-val{font-size:10px;font-weight:600}
+        .line-chart{width:100%;height:160px}
+        @media(max-width:768px){.sidebar{width:48px}.nav-item span{display:none}.g2,.g3,.g4,.g-main{grid-template-columns:1fr}.row{flex-direction:column}.topbar{padding:0 10px}}
     </style>
 </head>
 <body>
-
-<!-- SIDEBAR -->
 <div class="sidebar">
     <div class="sidebar-logo" title="Maroon Investments">MI</div>
     <div class="sidebar-nav">
-        <div class="nav-item active" onclick="go('overview',this)" title="Overview">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-            <span>Overview</span>
+        <div class="nav-item active" onclick="go('portfolio',this)" title="Portfolio">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 4 5-9"/></svg>
+            <span>Portfolio</span>
         </div>
         <div class="nav-item" onclick="go('positions',this)" title="Positions">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path d="M12 8v4l3 3"/></svg>
@@ -143,9 +78,9 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
             <span>Orders</span>
         </div>
-        <div class="nav-item" onclick="go('activity',this)" title="Activity">
+        <div class="nav-item" onclick="go('webhooks',this)" title="Webhooks">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            <span>Activity</span>
+            <span>Webhooks</span>
         </div>
         <div class="nav-item" onclick="go('closed',this)" title="Closed">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="10"/></svg>
@@ -156,17 +91,11 @@
             <span>Inputs</span>
         </div>
     </div>
-    <div class="sidebar-bottom">
-        <div class="status-indicator checking" id="serverDot" title="Server status"></div>
-    </div>
+    <div class="sidebar-bottom"><div class="status-indicator checking" id="serverDot" title="Server status"></div></div>
 </div>
-
-<!-- MAIN -->
 <div class="main">
-    <!-- TOP BAR -->
     <div class="topbar">
-        <span class="topbar-title" id="pageTitle">Overview</span>
-        <span class="topbar-badge" id="modeBadge" style="display:none"></span>
+        <span class="topbar-title" id="pageTitle">Portfolio</span>
         <div class="topbar-right">
             <div class="topbar-stat">Equity <span class="val" id="tbEquity">--</span></div>
             <div class="topbar-stat">Day P&L <span class="val" id="tbDayPl">--</span></div>
@@ -174,43 +103,49 @@
         </div>
     </div>
 
-    <!-- OVERVIEW -->
-    <div class="content active" id="pg-overview">
+    <!-- PORTFOLIO -->
+    <div class="content active" id="pg-portfolio">
         <div class="grid g4" style="margin-bottom:12px">
             <div class="panel"><div class="stat-block"><div class="val flat" id="equity">--</div><div class="lbl">Portfolio Value</div></div></div>
             <div class="panel"><div class="stat-block"><div class="val" id="dayPl">--</div><div class="lbl">Day P&L</div></div></div>
             <div class="panel"><div class="stat-block"><div class="val flat" id="buyPow">--</div><div class="lbl">Buying Power</div></div></div>
             <div class="panel"><div class="stat-block"><div class="val flat" id="openPos">--</div><div class="lbl">Open Positions</div></div></div>
         </div>
+        <div class="grid g2" style="margin-bottom:12px">
+            <div class="panel">
+                <div class="panel-header"><span class="panel-title">Portfolio Value (1 Month)</span></div>
+                <div class="panel-body"><canvas id="lineChart" class="line-chart"></canvas></div>
+            </div>
+            <div class="panel">
+                <div class="panel-header"><span class="panel-title">Daily P&L This Week</span></div>
+                <div class="panel-body"><div id="barChart" class="bar-chart"></div></div>
+            </div>
+        </div>
         <div class="grid g-main">
             <div class="panel"><div class="panel-header"><span class="panel-title">Positions</span></div><div class="panel-body no-pad"><div class="scroll-table" id="overviewPositions"><div class="empty">Loading...</div></div></div></div>
             <div>
-                <div class="panel"><div class="panel-header"><span class="panel-title">Recent Activity</span></div><div class="panel-body no-pad"><div class="scroll-table" id="overviewActivity"><div class="empty">Loading...</div></div></div></div>
+                <div class="panel"><div class="panel-header"><span class="panel-title">Recent Webhooks</span></div><div class="panel-body no-pad"><div class="scroll-table" id="overviewActivity"><div class="empty">Loading...</div></div></div></div>
                 <div class="panel"><div class="panel-header"><span class="panel-title">Today's P&L</span><span id="closedPnlBadge"></span></div><div class="panel-body no-pad"><div id="overviewClosed"><div class="empty">Loading...</div></div></div></div>
             </div>
         </div>
     </div>
-
     <!-- POSITIONS -->
     <div class="content" id="pg-positions">
         <div class="panel"><div class="panel-header"><span class="panel-title">Open Positions</span><button class="btn btn-ghost btn-sm" onclick="loadPositions()">Refresh</button></div><div class="panel-body no-pad"><div id="posTable"><div class="empty">Loading...</div></div></div></div>
     </div>
-
     <!-- ORDERS -->
     <div class="content" id="pg-orders">
         <div class="panel"><div class="panel-header"><span class="panel-title">Order History</span><button class="btn btn-ghost btn-sm" onclick="loadOrders()">Refresh</button></div><div class="panel-body no-pad"><div class="scroll-table" style="max-height:calc(100vh - 120px)" id="ordersTable"><div class="empty">Loading...</div></div></div></div>
     </div>
-
-    <!-- ACTIVITY -->
-    <div class="content" id="pg-activity">
+    <!-- WEBHOOKS -->
+    <div class="content" id="pg-webhooks">
         <div class="grid g3" style="margin-bottom:12px">
             <div class="panel"><div class="stat-block"><div class="val flat" id="whTotal">0</div><div class="lbl">Total Fills</div></div></div>
             <div class="panel"><div class="stat-block"><div class="val up" id="whBuys">0</div><div class="lbl">Buys</div></div></div>
             <div class="panel"><div class="stat-block"><div class="val down" id="whSells">0</div><div class="lbl">Sells</div></div></div>
         </div>
-        <div class="panel"><div class="panel-header"><span class="panel-title">Trade Activity</span><button class="btn btn-ghost btn-sm" onclick="loadActivity()">Refresh</button></div><div class="panel-body no-pad"><div class="scroll-table" style="max-height:calc(100vh - 220px)" id="actTable"><div class="empty">Loading...</div></div></div></div>
+        <div class="panel"><div class="panel-header"><span class="panel-title">Webhook Activity</span><button class="btn btn-ghost btn-sm" onclick="loadActivity()">Refresh</button></div><div class="panel-body no-pad"><div class="scroll-table" style="max-height:calc(100vh - 220px)" id="actTable"><div class="empty">Loading...</div></div></div></div>
     </div>
-
     <!-- CLOSED -->
     <div class="content" id="pg-closed">
         <div class="grid g3" style="margin-bottom:12px">
@@ -220,7 +155,6 @@
         </div>
         <div class="panel"><div class="panel-header"><span class="panel-title">Closed Trades</span><button class="btn btn-ghost btn-sm" onclick="loadClosed()">Refresh</button></div><div class="panel-body no-pad"><div class="scroll-table" style="max-height:calc(100vh - 220px)" id="closedTable"><div class="empty">Loading...</div></div></div></div>
     </div>
-
     <!-- INPUTS -->
     <div class="content" id="pg-inputs">
         <div class="grid g2">
@@ -252,10 +186,9 @@ function toast(m,t='ok'){const e=document.createElement('div');e.className='toas
 function go(id,el){
     document.querySelectorAll('.content').forEach(p=>p.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(t=>t.classList.remove('active'));
-    $('pg-'+id).classList.add('active');
-    if(el)el.classList.add('active');
-    $('pageTitle').textContent={overview:'Overview',positions:'Positions',orders:'Orders',activity:'Activity',closed:'Closed Trades',inputs:'Inputs'}[id]||id;
-    window.location.hash=id;
+    $('pg-'+id).classList.add('active');if(el)el.classList.add('active');
+    const names={portfolio:'Portfolio',positions:'Positions',orders:'Orders',webhooks:'Webhooks',closed:'Closed Trades',inputs:'Inputs'};
+    $('pageTitle').textContent=names[id]||id;window.location.hash=id;
 }
 
 async function api(path){try{const r=await fetch(API+path);if(!r.ok)throw new Error(r.status);return await r.json()}catch(e){return{success:false,error:e.message}}}
@@ -263,8 +196,7 @@ async function apiPost(path,body){try{const r=await fetch(API+path,{method:'POST
 
 async function checkHealth(){
     try{const r=await fetch(API+'/health',{signal:AbortSignal.timeout(5000)});const d=await r.json();
-        if(d.status==='healthy'){$('serverDot').className='status-indicator on';$('modeBadge').textContent=d.paper_trading?'PAPER':'LIVE';$('modeBadge').className='topbar-badge '+(d.paper_trading?'paper':'live')}
-        else throw 0;
+        if(d.status==='healthy')$('serverDot').className='status-indicator on';else throw 0;
     }catch(e){$('serverDot').className='status-indicator off'}
 }
 
@@ -281,6 +213,66 @@ async function loadAccount(){
         d.positions.forEach(p=>{const pp=p.unrealized_plpc*100;h+=`<tr><td class="sym">${p.symbol}</td><td>${p.qty}</td><td>${fmt(p.current_price)}</td><td>${fmt(p.market_value)}</td><td class="${plc(p.unrealized_pl)}">${fmt(p.unrealized_pl)}</td><td class="${plc(pp)}">${pct(pp)}</td></tr>`});
         h+='</table>';$('overviewPositions').innerHTML=h;
     }else $('overviewPositions').innerHTML='<div class="empty">No open positions</div>';
+}
+
+// ── Charts ──
+async function loadCharts(){
+    try{
+        const d=await api('/api/portfolio-history?period=1M&timeframe=1D');
+        if(!d.success||!d.history)return;
+        const h=d.history;
+        // Line chart — portfolio value over 1 month
+        const canvas=$('lineChart');const ctx=canvas.getContext('2d');
+        canvas.width=canvas.parentElement.offsetWidth;canvas.height=160;
+        const eq=h.equity||[];const ts=h.timestamp||[];
+        if(!eq.length)return;
+        const minV=Math.min(...eq)*0.998;const maxV=Math.max(...eq)*1.002;const range=maxV-minV||1;
+        const w=canvas.width;const ht=canvas.height;const pad=30;
+        ctx.clearRect(0,0,w,ht);
+        // Grid lines
+        ctx.strokeStyle='rgba(37,42,58,.6)';ctx.lineWidth=1;
+        for(let i=0;i<4;i++){const y=pad+(ht-pad*2)*i/3;ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(w-10,y);ctx.stroke()}
+        // Line
+        ctx.beginPath();ctx.strokeStyle='#3b82f6';ctx.lineWidth=2;
+        const gradient=ctx.createLinearGradient(0,0,0,ht);gradient.addColorStop(0,'rgba(59,130,246,.15)');gradient.addColorStop(1,'rgba(59,130,246,0)');
+        const pts=[];
+        eq.forEach((v,i)=>{const x=pad+(w-pad-10)*i/(eq.length-1||1);const y=pad+(ht-pad*2)*(1-(v-minV)/range);pts.push({x,y});if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)});
+        ctx.stroke();
+        // Fill
+        ctx.lineTo(pts[pts.length-1].x,ht-pad);ctx.lineTo(pts[0].x,ht-pad);ctx.closePath();ctx.fillStyle=gradient;ctx.fill();
+        // Labels
+        ctx.fillStyle='#5c6478';ctx.font='10px Inter,sans-serif';
+        ctx.fillText(fmt(maxV),0,pad-4);ctx.fillText(fmt(minV),0,ht-pad+12);
+        // Date labels
+        if(ts.length>1){
+            const first=new Date(ts[0]*1000);const last=new Date(ts[ts.length-1]*1000);
+            ctx.fillText(first.toLocaleDateString('en-US',{month:'short',day:'numeric'}),pad,ht-4);
+            const lastLabel=last.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+            ctx.fillText(lastLabel,w-ctx.measureText(lastLabel).width-10,ht-4);
+        }
+
+        // Bar chart — daily P&L this week
+        const pl=h.profit_loss||[];
+        const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        const now=new Date();const dow=now.getDay();
+        // Get last 5 trading days (Mon-Fri of this week)
+        const weekPl=[];const weekLabels=[];
+        const startIdx=Math.max(0,pl.length-5);
+        for(let i=startIdx;i<pl.length;i++){
+            weekPl.push(pl[i]||0);
+            if(ts[i])weekLabels.push(dayNames[new Date(ts[i]*1000).getDay()]);
+            else weekLabels.push('--');
+        }
+        if(!weekPl.length)return;
+        const maxBar=Math.max(...weekPl.map(Math.abs),1);
+        let bh='';
+        weekPl.forEach((v,i)=>{
+            const pctH=Math.abs(v)/maxBar*100;
+            const color=v>=0?'var(--green)':'var(--red)';
+            bh+=`<div class="bar-col"><div class="bar-val" style="color:${color}">${v>=0?'+':''}${fmt(v)}</div><div class="bar" style="height:${Math.max(pctH,3)}%;background:${color}"></div><div class="bar-label">${weekLabels[i]||''}</div></div>`;
+        });
+        $('barChart').innerHTML=bh;
+    }catch(e){console.error('Chart error:',e)}
 }
 
 async function loadPositions(){
@@ -352,7 +344,7 @@ async function saveSettings(){
 const hash=window.location.hash.replace('#','');
 if(hash){const el=document.querySelector(`.nav-item[onclick*="'${hash}'"]`);if(el)go(hash,el)}
 function refreshAll(){checkHealth();loadAccount();loadActivity();loadClosed()}
-refreshAll();loadPositions();loadOrders();loadSettings();
+refreshAll();loadPositions();loadOrders();loadSettings();loadCharts();
 setInterval(refreshAll,15000);setInterval(loadOrders,30000);
 </script>
 </body>
