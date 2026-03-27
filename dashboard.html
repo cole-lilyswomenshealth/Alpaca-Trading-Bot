@@ -57,10 +57,11 @@
         .chart-tooltip{position:absolute;pointer-events:none;display:none;background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:11px;z-index:5;white-space:nowrap}
         .chart-tooltip .tt-val{font-weight:700;color:var(--text-bright)}.chart-tooltip .tt-date{color:var(--muted)}
         .chart-crosshair{position:absolute;top:0;width:1px;background:rgba(59,130,246,.4);pointer-events:none;display:none}
-        .bar-chart{display:flex;align-items:flex-end;justify-content:space-around;height:140px;padding:0 10px}
-        .bar-col{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;max-width:80px}
-        .bar{width:36px;border-radius:4px 4px 0 0;transition:height .4s;min-height:4px}
-        .bar-label{font-size:10px;color:var(--muted)}.bar-val{font-size:10px;font-weight:600}
+        .bar-chart{display:flex;align-items:flex-end;justify-content:space-around;height:120px;padding:0 10px}
+        .bar-col{display:flex;flex-direction:column;align-items:center;flex:1;max-width:80px}
+        .bar-wrap{height:90px;display:flex;align-items:flex-end;width:100%}
+        .bar{width:36px;border-radius:4px 4px 0 0;margin:0 auto;min-height:8px}
+        .bar-label{font-size:10px;color:var(--muted);margin-top:4px}.bar-val{font-size:10px;font-weight:600;margin-bottom:4px}
         .line-chart{width:100%;height:160px;cursor:crosshair}
         @media(max-width:768px){.sidebar{width:48px}.nav-item span{display:none}.g2,.g3,.g4,.g-main{grid-template-columns:1fr}.row{flex-direction:column}.topbar{padding:0 10px}}
     </style>
@@ -286,12 +287,12 @@ async function loadCharts(){
             const maxBar=Math.max(...weekPl.map(Math.abs));
             let bh='';
             weekPl.forEach((v,i)=>{
-                let barPct;
-                if(maxBar===0){barPct=10}
-                else{barPct=Math.abs(v)/maxBar*100;barPct=Math.max(barPct,15)} // min 15% height
+                let barH;
+                if(maxBar===0){barH=8}
+                else{barH=Math.round(Math.abs(v)/maxBar*90);barH=Math.max(barH,8)}
                 const color=v>=0?'var(--green)':'var(--red)';
                 const sign=v>=0?'+':'-';
-                bh+=`<div class="bar-col"><div class="bar-val" style="color:${color}">${sign}$${Math.abs(v).toFixed(2)}</div><div class="bar" style="height:${barPct}%;background:${color}"></div><div class="bar-label">${weekLabels[i]}</div></div>`;
+                bh+=`<div class="bar-col"><div class="bar-val" style="color:${color}">${sign}$${Math.abs(v).toFixed(2)}</div><div class="bar-wrap"><div class="bar" style="height:${barH}px;background:${color}"></div></div><div class="bar-label">${weekLabels[i]}</div></div>`;
             });
             $('barChart').innerHTML=bh;
         }else{$('barChart').innerHTML='<div class="empty">No P&L data yet</div>'}
