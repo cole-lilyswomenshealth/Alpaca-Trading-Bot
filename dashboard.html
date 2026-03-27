@@ -2,436 +2,358 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Maroon Investments</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
         :root{
-            --bg:#0b0e11;--surface:#141820;--surface2:#1a1f2e;--border:#252d3a;
-            --text:#e4e8ef;--muted:#6b7a90;--accent:#4f8cff;--accent-glow:rgba(79,140,255,.12);
-            --green:#00c48c;--green-bg:rgba(0,196,140,.1);
-            --red:#ff5c5c;--red-bg:rgba(255,92,92,.1);
-            --yellow:#ffb84d;--yellow-bg:rgba(255,184,77,.1);
-            --radius:12px;--radius-sm:8px;
+            --bg:#0c0e14;--sidebar:#12151e;--panel:#161a25;--panel2:#1c2030;
+            --border:#252a3a;--border-light:#2e3448;
+            --text:#d1d5e0;--text-bright:#eef0f6;--muted:#5c6478;
+            --accent:#3b82f6;--accent-dim:rgba(59,130,246,.12);
+            --green:#22c55e;--green-dim:rgba(34,197,94,.1);
+            --red:#ef4444;--red-dim:rgba(239,68,68,.1);
+            --orange:#f59e0b;--orange-dim:rgba(245,158,11,.1);
         }
-        body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
+        body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;-webkit-font-smoothing:antialiased}
 
-        /* ── Nav ── */
-        .nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;height:56px;position:sticky;top:0;z-index:100;backdrop-filter:blur(12px)}
-        .nav-brand{font-size:17px;font-weight:700;color:#fff;margin-right:32px;display:flex;align-items:center;gap:8px}
-        .nav-brand svg{width:22px;height:22px}
-        .nav-tabs{display:flex;gap:4px;height:100%;flex:1}
-        .nav-tab{padding:0 14px;height:100%;display:flex;align-items:center;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;border-radius:6px 6px 0 0}
-        .nav-tab:hover{color:var(--text);background:rgba(255,255,255,.03)}
-        .nav-tab.active{color:var(--accent);border-bottom-color:var(--accent);background:var(--accent-glow)}
-        .nav-right{display:flex;align-items:center;gap:12px}
-        .server-pill{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;padding:5px 12px;border-radius:20px;background:var(--surface2);border:1px solid var(--border)}
-        .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-        .dot.on{background:var(--green);box-shadow:0 0 8px var(--green)}
-        .dot.off{background:var(--red);box-shadow:0 0 8px var(--red)}
-        .dot.checking{background:var(--yellow);animation:pulse 1s infinite}
-        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-        .paper-badge{font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;background:var(--yellow-bg);color:var(--yellow);text-transform:uppercase;letter-spacing:.5px}
+        /* ── Sidebar ── */
+        .sidebar{width:64px;background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:12px 0;flex-shrink:0;z-index:10}
+        .sidebar-logo{width:36px;height:36px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;font-weight:700;font-size:14px;color:#fff}
+        .sidebar-nav{display:flex;flex-direction:column;gap:4px;flex:1;width:100%}
+        .nav-item{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 0;cursor:pointer;color:var(--muted);transition:all .15s;position:relative;font-size:10px;font-weight:500}
+        .nav-item:hover{color:var(--text)}
+        .nav-item.active{color:var(--accent)}
+        .nav-item.active::before{content:'';position:absolute;left:0;top:8px;bottom:8px;width:3px;background:var(--accent);border-radius:0 3px 3px 0}
+        .nav-item svg{width:20px;height:20px;stroke-width:1.8}
+        .sidebar-bottom{margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:8px;padding-bottom:8px}
+        .status-indicator{width:10px;height:10px;border-radius:50%;cursor:pointer}
+        .status-indicator.on{background:var(--green);box-shadow:0 0 8px rgba(34,197,94,.5)}
+        .status-indicator.off{background:var(--red);box-shadow:0 0 8px rgba(239,68,68,.5)}
+        .status-indicator.checking{background:var(--orange);animation:pulse 1.2s infinite}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
-        /* ── Layout ── */
-        .page{display:none;padding:20px 24px;max-width:1280px;margin:0 auto}
-        .page.active{display:block}
-        .grid{display:grid;gap:16px}
+        /* ── Top Bar ── */
+        .topbar{height:44px;background:var(--sidebar);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0}
+        .topbar-title{font-size:14px;font-weight:600;color:var(--text-bright)}
+        .topbar-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;letter-spacing:.5px}
+        .topbar-badge.paper{background:var(--orange-dim);color:var(--orange)}
+        .topbar-badge.live{background:var(--green-dim);color:var(--green)}
+        .topbar-right{margin-left:auto;display:flex;align-items:center;gap:12px;font-size:12px;color:var(--muted)}
+        .topbar-stat{display:flex;align-items:center;gap:6px}
+        .topbar-stat .val{font-weight:600;color:var(--text-bright)}
+
+        /* ── Main Area ── */
+        .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+        .content{flex:1;overflow-y:auto;padding:16px;display:none}
+        .content.active{display:block}
+
+        /* ── Panels / Cards ── */
+        .panel{background:var(--panel);border:1px solid var(--border);border-radius:8px;margin-bottom:12px;overflow:hidden}
+        .panel-header{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--panel2)}
+        .panel-title{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+        .panel-body{padding:14px}
+        .panel-body.no-pad{padding:0}
+
+        /* ── Grid ── */
+        .grid{display:grid;gap:12px}
         .g2{grid-template-columns:1fr 1fr}
         .g3{grid-template-columns:1fr 1fr 1fr}
         .g4{grid-template-columns:1fr 1fr 1fr 1fr}
+        .g-main{grid-template-columns:2fr 1fr}
 
-        /* ── Cards ── */
-        .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;transition:border-color .2s}
-        .card:hover{border-color:rgba(79,140,255,.2)}
-        .card-title{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
-
-        /* ── Stat Cards ── */
-        .stat-card{text-align:center;padding:20px 16px}
-        .stat-val{font-size:26px;font-weight:700;letter-spacing:-.5px}
-        .stat-label{font-size:11px;font-weight:500;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
-        .up{color:var(--green)}.down{color:var(--red)}.neutral{color:var(--text)}
+        /* ── Stat Blocks ── */
+        .stat-block{padding:14px;text-align:center}
+        .stat-block .val{font-size:22px;font-weight:700;letter-spacing:-.3px}
+        .stat-block .lbl{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
+        .up{color:var(--green)}.down{color:var(--red)}.flat{color:var(--text-bright)}
 
         /* ── Table ── */
-        table{width:100%;border-collapse:collapse;font-size:13px}
-        th{text-align:left;padding:10px 12px;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)}
-        td{padding:10px 12px;border-bottom:1px solid rgba(37,45,58,.5)}
-        tr:hover{background:rgba(79,140,255,.03)}
-        .sym{font-weight:600;color:#fff}
+        table{width:100%;border-collapse:collapse;font-size:12px}
+        th{text-align:left;padding:8px 12px;color:var(--muted);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;background:var(--panel2);border-bottom:1px solid var(--border);position:sticky;top:0}
+        td{padding:8px 12px;border-bottom:1px solid rgba(37,42,58,.4)}
+        tr:hover td{background:rgba(59,130,246,.03)}
+        .sym{font-weight:600;color:var(--text-bright)}
 
         /* ── Form ── */
-        label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px}
-        input,select{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:var(--radius-sm);font-size:14px;font-family:inherit;outline:none;transition:border-color .2s}
-        input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
-        .field{margin-bottom:16px}
-        .row{display:flex;gap:14px}.row>div{flex:1}
+        label{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px}
+        input,select{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:6px;font-size:13px;font-family:inherit;outline:none;transition:border .2s}
+        input:focus,select:focus{border-color:var(--accent)}
+        .field{margin-bottom:14px}
+        .row{display:flex;gap:12px}.row>div{flex:1}
 
         /* ── Toggle ── */
-        .toggle-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid rgba(37,45,58,.5)}
+        .toggle-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid rgba(37,42,58,.4)}
         .toggle-row:last-child{border-bottom:none}
-        .toggle-info .t-label{font-size:14px;font-weight:500}
-        .toggle-info .t-desc{font-size:12px;color:var(--muted);margin-top:3px}
-        .toggle{width:44px;height:24px;background:var(--border);border-radius:12px;cursor:pointer;position:relative;transition:background .25s;flex-shrink:0}
+        .t-label{font-size:13px;font-weight:500;color:var(--text-bright)}
+        .t-desc{font-size:11px;color:var(--muted);margin-top:2px}
+        .toggle{width:40px;height:22px;background:var(--border);border-radius:11px;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0}
         .toggle.on{background:var(--accent)}
-        .toggle::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform .25s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
-        .toggle.on::after{transform:translateX(20px)}
+        .toggle::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+        .toggle.on::after{transform:translateX(18px)}
 
         /* ── Buttons ── */
-        .btn{padding:8px 16px;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit}
-        .btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.2)}
-        .btn:active{transform:translateY(0)}
+        .btn{padding:7px 14px;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
+        .btn:hover{filter:brightness(1.1)}
         .btn-accent{background:var(--accent);color:#fff}
-        .btn-outline{background:transparent;border:1px solid var(--border);color:var(--muted)}
-        .btn-outline:hover{border-color:var(--accent);color:var(--accent)}
-        .btn-green{background:var(--green);color:#fff}
+        .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
+        .btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
         .btn-red{background:var(--red);color:#fff}
-        .btn-sm{padding:4px 10px;font-size:11px;border-radius:6px}
+        .btn-sm{padding:4px 8px;font-size:10px}
 
         /* ── Badges ── */
-        .badge{display:inline-block;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600}
-        .badge-green{background:var(--green-bg);color:var(--green)}
-        .badge-red{background:var(--red-bg);color:var(--red)}
-        .badge-yellow{background:var(--yellow-bg);color:var(--yellow)}
-        .badge-blue{background:var(--accent-glow);color:var(--accent)}
+        .badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600}
+        .b-green{background:var(--green-dim);color:var(--green)}
+        .b-red{background:var(--red-dim);color:var(--red)}
+        .b-orange{background:var(--orange-dim);color:var(--orange)}
+        .b-blue{background:var(--accent-dim);color:var(--accent)}
 
-        /* ── Toast ── */
-        .toast{position:fixed;bottom:24px;right:24px;padding:14px 22px;border-radius:var(--radius);font-size:13px;font-weight:500;z-index:1000;animation:slideIn .3s;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+        .empty{text-align:center;padding:28px;color:var(--muted);font-size:12px}
+        .toast{position:fixed;bottom:20px;right:20px;padding:12px 20px;border-radius:8px;font-size:12px;font-weight:500;z-index:1000;animation:fadeUp .3s;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.4)}
         .toast.ok{background:var(--green)}.toast.err{background:var(--red)}
-        @keyframes slideIn{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+        @keyframes fadeUp{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
 
-        .empty{text-align:center;padding:32px;color:var(--muted);font-size:13px}
-        .section-divider{height:1px;background:var(--border);margin:20px 0}
+        .scroll-table{max-height:320px;overflow-y:auto}
+        .hint{font-size:11px;color:var(--muted);margin-top:4px}
 
-        /* ── Responsive ── */
         @media(max-width:768px){
-            .g2,.g3,.g4{grid-template-columns:1fr}
+            .sidebar{width:48px}.nav-item span{display:none}
+            .g2,.g3,.g4,.g-main{grid-template-columns:1fr}
             .row{flex-direction:column}
-            .nav{padding:0 12px}
-            .nav-brand{margin-right:12px;font-size:15px}
-            .nav-tabs{overflow-x:auto;-webkit-overflow-scrolling:touch}
-            .nav-tab{white-space:nowrap;font-size:12px;padding:0 10px}
-            .page{padding:12px}
-            .stat-val{font-size:22px}
+            .topbar{padding:0 10px}
         }
     </style>
 </head>
 <body>
-<div class="nav">
-    <span class="nav-brand">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 4 5-9"/></svg>
-        Maroon Investments
-    </span>
-    <div class="nav-tabs">
-        <div class="nav-tab active" onclick="showPage('overview',this)">Overview</div>
-        <div class="nav-tab" onclick="showPage('positions',this)">Positions</div>
-        <div class="nav-tab" onclick="showPage('orders',this)">Orders</div>
-        <div class="nav-tab" onclick="showPage('activity',this)">Activity</div>
-        <div class="nav-tab" onclick="showPage('closed',this)">Closed Trades</div>
-        <div class="nav-tab" onclick="showPage('settings',this)">Inputs</div>
-    </div>
-    <div class="nav-right">
-        <span class="paper-badge" id="modeBadge">PAPER</span>
-        <div class="server-pill"><div class="dot checking" id="serverDot"></div><span id="serverText">Checking...</span></div>
-    </div>
-</div>
 
-<!-- OVERVIEW -->
-<div class="page active" id="pg-overview">
-    <div class="grid g4" style="margin-bottom:16px">
-        <div class="card stat-card"><div class="stat-val neutral" id="equity">--</div><div class="stat-label">Portfolio Value</div></div>
-        <div class="card stat-card"><div class="stat-val" id="dayPl">--</div><div class="stat-label">Day P&L</div></div>
-        <div class="card stat-card"><div class="stat-val neutral" id="buyPow">--</div><div class="stat-label">Buying Power</div></div>
-        <div class="card stat-card"><div class="stat-val neutral" id="openPos">--</div><div class="stat-label">Open Positions</div></div>
-    </div>
-    <div class="grid g2">
-        <div class="card">
-            <div class="card-title">Open Positions</div>
-            <div id="overviewPositions"><div class="empty">Loading...</div></div>
+<!-- SIDEBAR -->
+<div class="sidebar">
+    <div class="sidebar-logo">MI</div>
+    <div class="sidebar-nav">
+        <div class="nav-item active" onclick="go('overview',this)" title="Overview">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            <span>Overview</span>
         </div>
-        <div class="card">
-            <div class="card-title">Recent Activity</div>
-            <div id="overviewActivity"><div class="empty">Loading...</div></div>
+        <div class="nav-item" onclick="go('positions',this)" title="Positions">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path d="M12 8v4l3 3"/></svg>
+            <span>Positions</span>
+        </div>
+        <div class="nav-item" onclick="go('orders',this)" title="Orders">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+            <span>Orders</span>
+        </div>
+        <div class="nav-item" onclick="go('activity',this)" title="Activity">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <span>Activity</span>
+        </div>
+        <div class="nav-item" onclick="go('closed',this)" title="Closed">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="10"/></svg>
+            <span>Closed</span>
+        </div>
+        <div class="nav-item" onclick="go('inputs',this)" title="Inputs">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+            <span>Inputs</span>
         </div>
     </div>
-    <div class="card" style="margin-top:16px">
-        <div class="card-title">Today's Closed Trades <span id="closedPnlBadge"></span></div>
-        <div id="overviewClosed"><div class="empty">Loading...</div></div>
+    <div class="sidebar-bottom">
+        <div class="status-indicator checking" id="serverDot" title="Server status"></div>
     </div>
 </div>
 
-<!-- POSITIONS -->
-<div class="page" id="pg-positions">
-    <div class="card">
-        <div class="card-title">All Open Positions <button class="btn btn-outline btn-sm" onclick="loadPositions()">Refresh</button></div>
-        <div id="posTable"><div class="empty">Loading...</div></div>
+<!-- MAIN -->
+<div class="main">
+    <!-- TOP BAR -->
+    <div class="topbar">
+        <span class="topbar-title" id="pageTitle">Overview</span>
+        <span class="topbar-badge paper" id="modeBadge">PAPER</span>
+        <div class="topbar-right">
+            <div class="topbar-stat">Equity <span class="val" id="tbEquity">--</span></div>
+            <div class="topbar-stat">Day P&L <span class="val" id="tbDayPl">--</span></div>
+            <div class="topbar-stat">Buying Power <span class="val" id="tbBuyPow">--</span></div>
+        </div>
     </div>
-</div>
 
-<!-- ORDERS -->
-<div class="page" id="pg-orders">
-    <div class="card">
-        <div class="card-title">Order History <button class="btn btn-outline btn-sm" onclick="loadOrders()">Refresh</button></div>
-        <div id="ordersTable"><div class="empty">Loading...</div></div>
+    <!-- OVERVIEW -->
+    <div class="content active" id="pg-overview">
+        <div class="grid g4" style="margin-bottom:12px">
+            <div class="panel"><div class="stat-block"><div class="val flat" id="equity">--</div><div class="lbl">Portfolio Value</div></div></div>
+            <div class="panel"><div class="stat-block"><div class="val" id="dayPl">--</div><div class="lbl">Day P&L</div></div></div>
+            <div class="panel"><div class="stat-block"><div class="val flat" id="buyPow">--</div><div class="lbl">Buying Power</div></div></div>
+            <div class="panel"><div class="stat-block"><div class="val flat" id="openPos">--</div><div class="lbl">Open Positions</div></div></div>
+        </div>
+        <div class="grid g-main">
+            <div class="panel"><div class="panel-header"><span class="panel-title">Positions</span></div><div class="panel-body no-pad"><div class="scroll-table" id="overviewPositions"><div class="empty">Loading...</div></div></div></div>
+            <div>
+                <div class="panel"><div class="panel-header"><span class="panel-title">Recent Activity</span></div><div class="panel-body no-pad"><div class="scroll-table" id="overviewActivity"><div class="empty">Loading...</div></div></div></div>
+                <div class="panel"><div class="panel-header"><span class="panel-title">Today's P&L</span><span id="closedPnlBadge"></span></div><div class="panel-body no-pad"><div id="overviewClosed"><div class="empty">Loading...</div></div></div></div>
+            </div>
+        </div>
     </div>
-</div>
 
-<!-- ACTIVITY -->
-<div class="page" id="pg-activity">
-    <div class="grid g3" style="margin-bottom:16px">
-        <div class="card stat-card"><div class="stat-val neutral" id="whTotal">0</div><div class="stat-label">Total Fills</div></div>
-        <div class="card stat-card"><div class="stat-val up" id="whBuys">0</div><div class="stat-label">Buys</div></div>
-        <div class="card stat-card"><div class="stat-val down" id="whSells">0</div><div class="stat-label">Sells</div></div>
+    <!-- POSITIONS -->
+    <div class="content" id="pg-positions">
+        <div class="panel"><div class="panel-header"><span class="panel-title">Open Positions</span><button class="btn btn-ghost btn-sm" onclick="loadPositions()">Refresh</button></div><div class="panel-body no-pad"><div id="posTable"><div class="empty">Loading...</div></div></div></div>
     </div>
-    <div class="card">
-        <div class="card-title">Trade Activity <button class="btn btn-outline btn-sm" onclick="loadActivity()">Refresh</button></div>
-        <div id="actTable"><div class="empty">Loading...</div></div>
-    </div>
-</div>
 
-<!-- CLOSED TRADES -->
-<div class="page" id="pg-closed">
-    <div class="grid g3" style="margin-bottom:16px">
-        <div class="card stat-card"><div class="stat-val" id="clTotalPnl">--</div><div class="stat-label">Total Realized P&L</div></div>
-        <div class="card stat-card"><div class="stat-val" id="clRoc">--</div><div class="stat-label">Return on Capital</div></div>
-        <div class="card stat-card"><div class="stat-val neutral" id="clCount">0</div><div class="stat-label">Closed Trades</div></div>
+    <!-- ORDERS -->
+    <div class="content" id="pg-orders">
+        <div class="panel"><div class="panel-header"><span class="panel-title">Order History</span><button class="btn btn-ghost btn-sm" onclick="loadOrders()">Refresh</button></div><div class="panel-body no-pad"><div class="scroll-table" style="max-height:calc(100vh - 120px)" id="ordersTable"><div class="empty">Loading...</div></div></div></div>
     </div>
-    <div class="card">
-        <div class="card-title">Closed Trades <button class="btn btn-outline btn-sm" onclick="loadClosed()">Refresh</button></div>
-        <div id="closedTable"><div class="empty">Loading...</div></div>
-    </div>
-</div>
 
-<!-- SETTINGS / INPUTS -->
-<div class="page" id="pg-settings">
-    <div class="card" style="margin-bottom:16px">
-        <div class="card-title">Trading Controls</div>
-        <div id="settingsToggles"></div>
+    <!-- ACTIVITY -->
+    <div class="content" id="pg-activity">
+        <div class="grid g3" style="margin-bottom:12px">
+            <div class="panel"><div class="stat-block"><div class="val flat" id="whTotal">0</div><div class="lbl">Total Fills</div></div></div>
+            <div class="panel"><div class="stat-block"><div class="val up" id="whBuys">0</div><div class="lbl">Buys</div></div></div>
+            <div class="panel"><div class="stat-block"><div class="val down" id="whSells">0</div><div class="lbl">Sells</div></div></div>
+        </div>
+        <div class="panel"><div class="panel-header"><span class="panel-title">Trade Activity</span><button class="btn btn-ghost btn-sm" onclick="loadActivity()">Refresh</button></div><div class="panel-body no-pad"><div class="scroll-table" style="max-height:calc(100vh - 220px)" id="actTable"><div class="empty">Loading...</div></div></div></div>
     </div>
-    <div class="card" style="margin-bottom:16px">
-        <div class="card-title">Profit Protection</div>
-        <div id="settingsProfit"></div>
+
+    <!-- CLOSED -->
+    <div class="content" id="pg-closed">
+        <div class="grid g3" style="margin-bottom:12px">
+            <div class="panel"><div class="stat-block"><div class="val" id="clTotalPnl">--</div><div class="lbl">Total Realized P&L</div></div></div>
+            <div class="panel"><div class="stat-block"><div class="val" id="clRoc">--</div><div class="lbl">Return on Capital</div></div></div>
+            <div class="panel"><div class="stat-block"><div class="val flat" id="clCount">0</div><div class="lbl">Closed Trades</div></div></div>
+        </div>
+        <div class="panel"><div class="panel-header"><span class="panel-title">Closed Trades</span><button class="btn btn-ghost btn-sm" onclick="loadClosed()">Refresh</button></div><div class="panel-body no-pad"><div class="scroll-table" style="max-height:calc(100vh - 220px)" id="closedTable"><div class="empty">Loading...</div></div></div></div>
     </div>
-    <div class="card" style="margin-bottom:16px">
-        <div class="card-title">Fibonacci Position Sizing</div>
-        <div id="settingsFib"></div>
-    </div>
-    <div class="card" style="margin-bottom:16px">
-        <div class="card-title">Risk Management</div>
-        <div id="settingsRisk"></div>
-    </div>
-    <div style="text-align:center;margin-top:16px">
-        <button class="btn btn-accent" onclick="saveSettings()" style="padding:14px 48px;font-size:15px;border-radius:var(--radius)">Save All Settings</button>
-        <div style="font-size:11px;color:var(--muted);margin-top:8px" id="saveStatus"></div>
+
+    <!-- INPUTS -->
+    <div class="content" id="pg-inputs">
+        <div class="grid g2">
+            <div>
+                <div class="panel"><div class="panel-header"><span class="panel-title">Trading Controls</span></div><div class="panel-body" id="inputsToggles"></div></div>
+                <div class="panel"><div class="panel-header"><span class="panel-title">Profit Protection</span></div><div class="panel-body" id="inputsProfit"></div></div>
+            </div>
+            <div>
+                <div class="panel"><div class="panel-header"><span class="panel-title">Fibonacci Position Sizing</span></div><div class="panel-body" id="inputsFib"></div></div>
+                <div class="panel"><div class="panel-header"><span class="panel-title">Risk Management</span></div><div class="panel-body" id="inputsRisk"></div></div>
+            </div>
+        </div>
+        <div style="text-align:center;margin-top:16px">
+            <button class="btn btn-accent" onclick="saveSettings()" style="padding:12px 40px;font-size:14px">Save All Inputs</button>
+            <div style="font-size:11px;color:var(--muted);margin-top:6px" id="saveStatus"></div>
+        </div>
     </div>
 </div>
 
 <script>
 const API=window.location.origin;
 let settings={};
-
-function $(id){return document.getElementById(id)}
-function fmt(n){return n!=null?'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'--'}
-function pct(n){return n!=null?Number(n).toFixed(2)+'%':'--'}
-function plc(n){return n>0?'up':n<0?'down':'neutral'}
+const $=id=>document.getElementById(id);
+const fmt=n=>n!=null?'$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'--';
+const pct=n=>n!=null?Number(n).toFixed(2)+'%':'--';
+const plc=n=>n>0?'up':n<0?'down':'flat';
 function toast(m,t='ok'){const e=document.createElement('div');e.className='toast '+t;e.textContent=m;document.body.appendChild(e);setTimeout(()=>e.remove(),3500)}
-function showPage(id,el){
-    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-    document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+
+function go(id,el){
+    document.querySelectorAll('.content').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(t=>t.classList.remove('active'));
     $('pg-'+id).classList.add('active');
     if(el)el.classList.add('active');
+    $('pageTitle').textContent={overview:'Overview',positions:'Positions',orders:'Orders',activity:'Activity',closed:'Closed Trades',inputs:'Inputs'}[id]||id;
     window.location.hash=id;
 }
 
 async function api(path){try{const r=await fetch(API+path);if(!r.ok)throw new Error(r.status);return await r.json()}catch(e){return{success:false,error:e.message}}}
 async function apiPost(path,body){try{const r=await fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});return await r.json()}catch(e){return{success:false,error:e.message}}}
 
-// ── Health Check ──
 async function checkHealth(){
-    try{
-        const r=await fetch(API+'/health',{signal:AbortSignal.timeout(5000)});
-        const d=await r.json();
-        if(d.status==='healthy'){
-            $('serverDot').className='dot on';
-            $('serverText').textContent='Online';
-            $('modeBadge').textContent=d.paper_trading?'PAPER':'LIVE';
-            $('modeBadge').style.background=d.paper_trading?'var(--yellow-bg)':'var(--green-bg)';
-            $('modeBadge').style.color=d.paper_trading?'var(--yellow)':'var(--green)';
-        }else throw new Error();
-    }catch(e){
-        $('serverDot').className='dot off';
-        $('serverText').textContent='Offline';
-    }
+    try{const r=await fetch(API+'/health',{signal:AbortSignal.timeout(5000)});const d=await r.json();
+        if(d.status==='healthy'){$('serverDot').className='status-indicator on';$('modeBadge').textContent=d.paper_trading?'PAPER':'LIVE';$('modeBadge').className='topbar-badge '+(d.paper_trading?'paper':'live')}
+        else throw 0;
+    }catch(e){$('serverDot').className='status-indicator off'}
 }
 
-// ── Account ──
 async function loadAccount(){
-    const d=await api('/api/account');
-    if(!d.success)return;
-    const a=d.account;
-    $('equity').textContent=fmt(a.equity);
-    const dayChange=a.equity-a.last_equity;
-    $('dayPl').textContent=(dayChange>=0?'+':'')+fmt(dayChange);
-    $('dayPl').className='stat-val '+plc(dayChange);
-    $('buyPow').textContent=fmt(a.buying_power);
+    const d=await api('/api/account');if(!d.success)return;const a=d.account;
+    $('equity').textContent=fmt(a.equity);$('tbEquity').textContent=fmt(a.equity);
+    const dc=a.equity-a.last_equity;
+    $('dayPl').textContent=(dc>=0?'+':'')+fmt(dc);$('dayPl').className='val '+plc(dc);
+    $('tbDayPl').textContent=(dc>=0?'+':'')+fmt(dc);$('tbDayPl').className='val '+plc(dc);
+    $('buyPow').textContent=fmt(a.buying_power);$('tbBuyPow').textContent=fmt(a.buying_power);
     $('openPos').textContent=d.total_positions;
-
     if(d.positions&&d.positions.length){
-        let h='<table><tr><th>Symbol</th><th>Qty</th><th>Current</th><th>P&L</th></tr>';
-        d.positions.forEach(p=>{h+=`<tr><td class="sym">${p.symbol}</td><td>${p.qty}</td><td>${fmt(p.current_price)}</td><td class="${plc(p.unrealized_pl)}">${fmt(p.unrealized_pl)}</td></tr>`});
+        let h='<table><tr><th>Symbol</th><th>Qty</th><th>Price</th><th>Mkt Value</th><th>P&L</th><th>%</th></tr>';
+        d.positions.forEach(p=>{const pp=p.unrealized_plpc*100;h+=`<tr><td class="sym">${p.symbol}</td><td>${p.qty}</td><td>${fmt(p.current_price)}</td><td>${fmt(p.market_value)}</td><td class="${plc(p.unrealized_pl)}">${fmt(p.unrealized_pl)}</td><td class="${plc(pp)}">${pct(pp)}</td></tr>`});
         h+='</table>';$('overviewPositions').innerHTML=h;
     }else $('overviewPositions').innerHTML='<div class="empty">No open positions</div>';
 }
 
-// ── Positions ──
 async function loadPositions(){
-    const d=await api('/api/account');
-    if(!d.success||!d.positions||!d.positions.length){$('posTable').innerHTML='<div class="empty">No open positions</div>';return}
-    let h='<table><tr><th>Symbol</th><th>Side</th><th>Qty</th><th>Avg Entry</th><th>Current</th><th>Market Value</th><th>P&L</th><th>P&L %</th><th></th></tr>';
-    d.positions.forEach(p=>{
-        const plPct=(p.unrealized_plpc*100);
-        h+=`<tr><td class="sym">${p.symbol}</td><td>${p.side}</td><td>${p.qty}</td><td>${fmt(p.avg_entry_price)}</td><td>${fmt(p.current_price)}</td><td>${fmt(p.market_value)}</td><td class="${plc(p.unrealized_pl)}">${fmt(p.unrealized_pl)}</td><td class="${plc(plPct)}">${pct(plPct)}</td><td><button class="btn btn-red btn-sm" onclick="closePos('${p.symbol}')">Close</button></td></tr>`});
+    const d=await api('/api/account');if(!d.success||!d.positions||!d.positions.length){$('posTable').innerHTML='<div class="empty">No open positions</div>';return}
+    let h='<table><tr><th>Symbol</th><th>Side</th><th>Qty</th><th>Avg Entry</th><th>Current</th><th>Mkt Value</th><th>P&L</th><th>P&L %</th><th></th></tr>';
+    d.positions.forEach(p=>{const pp=p.unrealized_plpc*100;h+=`<tr><td class="sym">${p.symbol}</td><td>${p.side}</td><td>${p.qty}</td><td>${fmt(p.avg_entry_price)}</td><td>${fmt(p.current_price)}</td><td>${fmt(p.market_value)}</td><td class="${plc(p.unrealized_pl)}">${fmt(p.unrealized_pl)}</td><td class="${plc(pp)}">${pct(pp)}</td><td><button class="btn btn-red btn-sm" onclick="closePos('${p.symbol}')">Close</button></td></tr>`});
     h+='</table>';$('posTable').innerHTML=h;
 }
-async function closePos(sym){if(!confirm('Close '+sym+'?'))return;const d=await fetch(API+'/api/positions/'+sym,{method:'DELETE'}).then(r=>r.json());if(d.success){toast('Closed '+sym);loadAccount();loadPositions()}else toast(d.error||'Failed','err')}
+async function closePos(s){if(!confirm('Close '+s+'?'))return;const d=await fetch(API+'/api/positions/'+s,{method:'DELETE'}).then(r=>r.json());if(d.success){toast('Closed '+s);loadAccount();loadPositions()}else toast(d.error||'Failed','err')}
 
-// ── Orders ──
 async function loadOrders(){
-    const d=await api('/api/orders?limit=100');
-    if(!d.orders||!d.orders.length){$('ordersTable').innerHTML='<div class="empty">No orders</div>';return}
+    const d=await api('/api/orders?limit=100');if(!d.orders||!d.orders.length){$('ordersTable').innerHTML='<div class="empty">No orders</div>';return}
     let h='<table><tr><th>Time</th><th>Symbol</th><th>Side</th><th>Qty</th><th>Filled</th><th>Price</th><th>Status</th><th></th></tr>';
-    d.orders.forEach(o=>{
-        const t=o.filled_at?new Date(o.filled_at).toLocaleString():o.submitted_at?new Date(o.submitted_at).toLocaleString():'--';
-        const sc=o.status==='filled'?'badge-green':o.status==='canceled'?'badge-red':'badge-yellow';
-        const canCancel=['new','accepted','pending_new','partially_filled'].includes(o.status);
-        h+=`<tr><td style="color:var(--muted);font-size:12px">${t}</td><td class="sym">${o.symbol}</td><td class="${o.side==='buy'?'up':'down'}">${o.side.toUpperCase()}</td><td>${o.qty}</td><td>${o.filled_qty||0}</td><td>${o.filled_avg_price?fmt(o.filled_avg_price):'--'}</td><td><span class="badge ${sc}">${o.status}</span></td><td>${canCancel?`<button class="btn btn-outline btn-sm" onclick="cancelOrd('${o.id}')">Cancel</button>`:''}</td></tr>`});
+    d.orders.forEach(o=>{const t=o.filled_at?new Date(o.filled_at).toLocaleString():o.submitted_at?new Date(o.submitted_at).toLocaleString():'--';const sc=o.status==='filled'?'b-green':o.status==='canceled'?'b-red':'b-orange';const cc=['new','accepted','pending_new','partially_filled'].includes(o.status);
+        h+=`<tr><td style="color:var(--muted)">${t}</td><td class="sym">${o.symbol}</td><td class="${o.side==='buy'?'up':'down'}">${o.side.toUpperCase()}</td><td>${o.qty}</td><td>${o.filled_qty||0}</td><td>${o.filled_avg_price?fmt(o.filled_avg_price):'--'}</td><td><span class="badge ${sc}">${o.status}</span></td><td>${cc?`<button class="btn btn-ghost btn-sm" onclick="cancelOrd('${o.id}')">Cancel</button>`:''}</td></tr>`});
     h+='</table>';$('ordersTable').innerHTML=h;
 }
-async function cancelOrd(id){if(!confirm('Cancel order?'))return;const d=await fetch(API+'/api/orders/'+id,{method:'DELETE'}).then(r=>r.json());if(d.success){toast('Cancelled');loadOrders()}else toast(d.error||'Failed','err')}
+async function cancelOrd(id){if(!confirm('Cancel?'))return;const d=await fetch(API+'/api/orders/'+id,{method:'DELETE'}).then(r=>r.json());if(d.success){toast('Cancelled');loadOrders()}else toast(d.error||'Failed','err')}
 
-// ── Activity (from Alpaca orders) ──
 async function loadActivity(){
-    const d=await api('/api/orders?limit=100');
-    if(!d.orders||!d.orders.length){
-        $('actTable').innerHTML='<div class="empty">No trade activity yet</div>';
-        $('overviewActivity').innerHTML='<div class="empty">No activity yet</div>';
-        $('whTotal').textContent='0';$('whBuys').textContent='0';$('whSells').textContent='0';return}
-
+    const d=await api('/api/orders?limit=100');if(!d.orders||!d.orders.length){$('actTable').innerHTML='<div class="empty">No activity</div>';$('overviewActivity').innerHTML='<div class="empty">No activity</div>';return}
     const filled=d.orders.filter(o=>o.status==='filled');
-    const buys=filled.filter(o=>o.side==='buy');
-    const sells=filled.filter(o=>o.side==='sell');
-    $('whTotal').textContent=filled.length;$('whBuys').textContent=buys.length;$('whSells').textContent=sells.length;
-
-    let h='<table><tr><th>Time</th><th>Symbol</th><th>Side</th><th>Qty</th><th>Price</th><th>Cost / Proceeds</th><th>Status</th></tr>';
-    d.orders.forEach(o=>{
-        const t=o.filled_at?new Date(o.filled_at).toLocaleString():o.submitted_at?new Date(o.submitted_at).toLocaleString():'--';
-        const sc=o.status==='filled'?'badge-green':o.status==='canceled'?'badge-red':'badge-yellow';
-        const cost=o.filled_avg_price&&o.filled_qty?(o.filled_avg_price*o.filled_qty):0;
-        h+=`<tr><td style="font-size:12px;color:var(--muted)">${t}</td><td class="sym">${o.symbol}</td><td class="${o.side==='buy'?'up':'down'}">${o.side.toUpperCase()}</td><td>${o.filled_qty||o.qty}</td><td>${o.filled_avg_price?fmt(o.filled_avg_price):'--'}</td><td>${cost?fmt(cost):'--'}</td><td><span class="badge ${sc}">${o.status}</span></td></tr>`});
+    $('whTotal').textContent=filled.length;$('whBuys').textContent=filled.filter(o=>o.side==='buy').length;$('whSells').textContent=filled.filter(o=>o.side==='sell').length;
+    let h='<table><tr><th>Time</th><th>Symbol</th><th>Side</th><th>Qty</th><th>Price</th><th>Cost</th><th>Status</th></tr>';
+    d.orders.forEach(o=>{const t=o.filled_at?new Date(o.filled_at).toLocaleString():o.submitted_at?new Date(o.submitted_at).toLocaleString():'--';const sc=o.status==='filled'?'b-green':o.status==='canceled'?'b-red':'b-orange';const c=o.filled_avg_price&&o.filled_qty?(o.filled_avg_price*o.filled_qty):0;
+        h+=`<tr><td style="color:var(--muted)">${t}</td><td class="sym">${o.symbol}</td><td class="${o.side==='buy'?'up':'down'}">${o.side.toUpperCase()}</td><td>${o.filled_qty||o.qty}</td><td>${o.filled_avg_price?fmt(o.filled_avg_price):'--'}</td><td>${c?fmt(c):'--'}</td><td><span class="badge ${sc}">${o.status}</span></td></tr>`});
     h+='</table>';$('actTable').innerHTML=h;
-
-    let mh='<table><tr><th>Time</th><th>Symbol</th><th>Side</th><th>Qty</th></tr>';
-    filled.slice(0,5).forEach(o=>{
-        mh+=`<tr><td style="font-size:12px;color:var(--muted)">${o.filled_at?new Date(o.filled_at).toLocaleTimeString():'--'}</td><td class="sym">${o.symbol}</td><td class="${o.side==='buy'?'up':'down'}">${o.side.toUpperCase()}</td><td>${o.filled_qty}</td></tr>`});
+    let mh='<table><tr><th>Time</th><th>Symbol</th><th>Side</th></tr>';
+    filled.slice(0,6).forEach(o=>{mh+=`<tr><td style="color:var(--muted)">${o.filled_at?new Date(o.filled_at).toLocaleTimeString():'--'}</td><td class="sym">${o.symbol}</td><td class="${o.side==='buy'?'up':'down'}">${o.side.toUpperCase()}</td></tr>`});
     mh+='</table>';$('overviewActivity').innerHTML=mh;
 }
 
-// ── Closed Trades ──
 async function loadClosed(){
-    const d=await api('/api/closed-positions?limit=200&days=30');
-    const positions=(d.positions||[]).filter(p=>p.symbol!=='TEST');
-
-    if(!positions.length){
-        $('closedTable').innerHTML='<div class="empty">No closed trades</div>';
-        $('overviewClosed').innerHTML='<div class="empty">No closed trades today</div>';
-        $('clTotalPnl').textContent='$0.00';$('clRoc').textContent='0.00%';$('clCount').textContent='0';return}
-
-    let totalPnl=0,totalCost=0;
-    const today=new Date().toISOString().split('T')[0];
-    const todayTrades=[];
-
-    let h='<table><tr><th>Symbol</th><th>Qty</th><th>Entry</th><th>Exit</th><th>P&L</th><th>P&L %</th><th>Closed</th></tr>';
-    positions.forEach(p=>{
-        totalPnl+=p.pnl;totalCost+=p.open_price*p.qty;
-        h+=`<tr><td class="sym">${p.symbol}</td><td>${p.qty}</td><td>${fmt(p.open_price)}</td><td>${fmt(p.close_price)}</td><td class="${plc(p.pnl)}">${fmt(p.pnl)}</td><td class="${plc(p.pnl_pct)}">${pct(p.pnl_pct)}</td><td style="font-size:12px;color:var(--muted)">${p.closed_at?new Date(p.closed_at).toLocaleString():'--'}</td></tr>`;
-        if(p.closed_at&&p.closed_at.startsWith(today))todayTrades.push(p);
-    });
+    const d=await api('/api/closed-positions?limit=200&days=30');const pos=(d.positions||[]).filter(p=>p.symbol!=='TEST');
+    if(!pos.length){$('closedTable').innerHTML='<div class="empty">No closed trades</div>';$('overviewClosed').innerHTML='<div class="empty">No closed trades today</div>';$('clTotalPnl').textContent='$0.00';$('clRoc').textContent='0.00%';$('clCount').textContent='0';return}
+    let tp=0,tc=0;const today=new Date().toISOString().split('T')[0],tt=[];
+    let h='<table><tr><th>Symbol</th><th>Qty</th><th>Entry</th><th>Exit</th><th>P&L</th><th>%</th><th>Closed</th></tr>';
+    pos.forEach(p=>{tp+=p.pnl;tc+=p.open_price*p.qty;h+=`<tr><td class="sym">${p.symbol}</td><td>${p.qty}</td><td>${fmt(p.open_price)}</td><td>${fmt(p.close_price)}</td><td class="${plc(p.pnl)}">${fmt(p.pnl)}</td><td class="${plc(p.pnl_pct)}">${pct(p.pnl_pct)}</td><td style="color:var(--muted)">${p.closed_at?new Date(p.closed_at).toLocaleString():'--'}</td></tr>`;if(p.closed_at&&p.closed_at.startsWith(today))tt.push(p)});
     h+='</table>';$('closedTable').innerHTML=h;
-
-    const roc=totalCost>0?(totalPnl/totalCost*100):0;
-    $('clTotalPnl').textContent=fmt(totalPnl);$('clTotalPnl').className='stat-val '+plc(totalPnl);
-    $('clRoc').textContent=pct(roc);$('clRoc').className='stat-val '+plc(roc);
-    $('clCount').textContent=positions.length;
-
-    if(todayTrades.length){
-        let todayPnl=0;
-        let th='<table><tr><th>Symbol</th><th>P&L</th><th>%</th></tr>';
-        todayTrades.forEach(p=>{todayPnl+=p.pnl;th+=`<tr><td class="sym">${p.symbol}</td><td class="${plc(p.pnl)}">${fmt(p.pnl)}</td><td class="${plc(p.pnl_pct)}">${pct(p.pnl_pct)}</td></tr>`});
-        th+='</table>';$('overviewClosed').innerHTML=th;
-        $('closedPnlBadge').innerHTML=`<span class="badge ${todayPnl>=0?'badge-green':'badge-red'}">${fmt(todayPnl)}</span>`;
-    }else{$('overviewClosed').innerHTML='<div class="empty">No closed trades today</div>';$('closedPnlBadge').innerHTML=''}
+    const roc=tc>0?(tp/tc*100):0;$('clTotalPnl').textContent=fmt(tp);$('clTotalPnl').className='val '+plc(tp);$('clRoc').textContent=pct(roc);$('clRoc').className='val '+plc(roc);$('clCount').textContent=pos.length;
+    if(tt.length){let tdp=0;let th='<table><tr><th>Symbol</th><th>P&L</th><th>%</th></tr>';tt.forEach(p=>{tdp+=p.pnl;th+=`<tr><td class="sym">${p.symbol}</td><td class="${plc(p.pnl)}">${fmt(p.pnl)}</td><td class="${plc(p.pnl_pct)}">${pct(p.pnl_pct)}</td></tr>`});th+='</table>';$('overviewClosed').innerHTML=th;$('closedPnlBadge').innerHTML=`<span class="badge ${tdp>=0?'b-green':'b-red'}">${fmt(tdp)}</span>`}
+    else{$('overviewClosed').innerHTML='<div class="empty">No closed trades today</div>';$('closedPnlBadge').innerHTML=''}
 }
 
-// ── Settings ──
 async function loadSettings(){
-    const d=await api('/api/settings');
-    if(!d.success)return;
-    settings=d.settings;
-
-    let thtml='';
-    [{k:'trading_enabled',l:'Trading Enabled',d:'Master kill switch — disables all order execution when off'}].forEach(t=>{
-        thtml+=`<div class="toggle-row"><div class="toggle-info"><div class="t-label">${t.l}</div><div class="t-desc">${t.d}</div></div><div class="toggle ${settings[t.k]?'on':''}" onclick="this.classList.toggle('on')" data-key="${t.k}"></div></div>`;
-    });
-    $('settingsToggles').innerHTML=thtml;
-
-    // Profit Protection
-    let phtml=`<div class="toggle-row" style="margin-bottom:16px"><div class="toggle-info"><div class="t-label">Profit Protection</div><div class="t-desc">Only sell positions that meet the minimum profit threshold</div></div><div class="toggle ${settings.profit_protection_enabled?'on':''}" onclick="this.classList.toggle('on')" data-key="profit_protection_enabled"></div></div>`;
-    phtml+=`<div class="field"><label>Minimum Profit % Required to Sell</label><input type="number" id="s_profit_thresh" step="0.1" min="0" value="${settings.profit_protection_threshold||0}"></div>`;
-    phtml+=`<div style="font-size:12px;color:var(--muted);margin-top:-8px;padding:0 2px">Set to 0 to sell at any profit. Set to 1.0 to require 1% profit before allowing a sell. Set to 5.0 to require 5% profit, etc.</div>`;
-    $('settingsProfit').innerHTML=phtml;
-
-    let fhtml=`<div class="toggle-row" style="margin-bottom:16px"><div class="toggle-info"><div class="t-label">Fibonacci Sizing</div><div class="t-desc">Use Fibonacci sequence for position sizing</div></div><div class="toggle ${settings.fibonacci_enabled?'on':''}" onclick="this.classList.toggle('on')" data-key="fibonacci_enabled"></div></div>`;
-    fhtml+=`<div class="row"><div class="field"><label>Base Quantity</label><input type="number" id="s_fib_base" step="0.01" value="${settings.fibonacci_base||0.1}"></div><div class="field"><label>Max Iterations</label><input type="number" id="s_fib_max" step="1" value="${settings.fibonacci_max_iterations||8}"></div></div>`;
-    fhtml+=`<div class="field"><label>Symbol-Specific Bases (JSON)</label><input type="text" id="s_fib_symbols" value='${JSON.stringify(settings.fibonacci_symbol_bases||{})}'></div>`;
-    $('settingsFib').innerHTML=fhtml;
-
-    let rhtml=`<div class="row"><div class="field"><label>Max Position Size ($)</label><input type="number" id="s_max_pos" step="100" value="${settings.max_position_size||10000}"></div><div class="field"><label>Max Open Positions</label><input type="number" id="s_max_open" step="1" value="${settings.max_open_positions||10}"></div></div>`;
-    rhtml+=`<div class="field"><label>Max Daily Loss ($)</label><input type="number" id="s_max_loss" step="100" value="${settings.max_daily_loss||500}"></div>`;
-    $('settingsRisk').innerHTML=rhtml;
+    const d=await api('/api/settings');if(!d.success)return;settings=d.settings;
+    $('inputsToggles').innerHTML=`<div class="toggle-row"><div><div class="t-label">Trading Enabled</div><div class="t-desc">Master kill switch — disables all order execution</div></div><div class="toggle ${settings.trading_enabled?'on':''}" onclick="this.classList.toggle('on')" data-key="trading_enabled"></div></div>`;
+    let p=`<div class="toggle-row" style="margin-bottom:14px"><div><div class="t-label">Profit Protection</div><div class="t-desc">Block sells unless position meets minimum profit</div></div><div class="toggle ${settings.profit_protection_enabled?'on':''}" onclick="this.classList.toggle('on')" data-key="profit_protection_enabled"></div></div>`;
+    p+=`<div class="field"><label>Min Profit % to Sell</label><input type="number" id="s_profit_thresh" step="0.1" min="0" value="${settings.profit_protection_threshold||0}"></div>`;
+    p+=`<div class="hint">0 = any profit. 1.0 = need 1% profit. 5.0 = need 5% profit before sell is allowed.</div>`;
+    $('inputsProfit').innerHTML=p;
+    let f=`<div class="toggle-row" style="margin-bottom:14px"><div><div class="t-label">Fibonacci Sizing</div><div class="t-desc">Auto-scale position sizes using Fibonacci sequence</div></div><div class="toggle ${settings.fibonacci_enabled?'on':''}" onclick="this.classList.toggle('on')" data-key="fibonacci_enabled"></div></div>`;
+    f+=`<div class="row"><div class="field"><label>Base Qty</label><input type="number" id="s_fib_base" step="0.01" value="${settings.fibonacci_base||0.1}"></div><div class="field"><label>Max Steps</label><input type="number" id="s_fib_max" step="1" value="${settings.fibonacci_max_iterations||8}"></div></div>`;
+    f+=`<div class="field"><label>Symbol Overrides (JSON)</label><input type="text" id="s_fib_symbols" value='${JSON.stringify(settings.fibonacci_symbol_bases||{})}'></div>`;
+    $('inputsFib').innerHTML=f;
+    let r=`<div class="row"><div class="field"><label>Max Position Size ($)</label><input type="number" id="s_max_pos" step="100" value="${settings.max_position_size||10000}"></div><div class="field"><label>Max Open Positions</label><input type="number" id="s_max_open" step="1" value="${settings.max_open_positions||10}"></div></div>`;
+    r+=`<div class="field"><label>Max Daily Loss ($)</label><input type="number" id="s_max_loss" step="100" value="${settings.max_daily_loss||500}"></div>`;
+    $('inputsRisk').innerHTML=r;
 }
 
 async function saveSettings(){
-    const toggles={};
-    document.querySelectorAll('.toggle[data-key]').forEach(t=>{toggles[t.dataset.key]=t.classList.contains('on')});
-    const payload={
-        ...toggles,
-        fibonacci_base:parseFloat($('s_fib_base').value),
-        fibonacci_max_iterations:parseInt($('s_fib_max').value),
-        fibonacci_symbol_bases:JSON.parse($('s_fib_symbols').value||'{}'),
-        max_position_size:parseFloat($('s_max_pos').value),
-        max_open_positions:parseInt($('s_max_open').value),
-        max_daily_loss:parseFloat($('s_max_loss').value),
-        profit_protection_threshold:parseFloat($('s_profit_thresh').value),
-    };
+    const tg={};document.querySelectorAll('.toggle[data-key]').forEach(t=>{tg[t.dataset.key]=t.classList.contains('on')});
+    const payload={...tg,fibonacci_base:parseFloat($('s_fib_base').value),fibonacci_max_iterations:parseInt($('s_fib_max').value),fibonacci_symbol_bases:JSON.parse($('s_fib_symbols').value||'{}'),max_position_size:parseFloat($('s_max_pos').value),max_open_positions:parseInt($('s_max_open').value),max_daily_loss:parseFloat($('s_max_loss').value),profit_protection_threshold:parseFloat($('s_profit_thresh').value)};
     const d=await apiPost('/api/settings',payload);
-    if(d.success){toast('Settings saved');$('saveStatus').textContent='Saved '+new Date().toLocaleTimeString()}
-    else toast(d.error||'Failed to save','err');
+    if(d.success){toast('Inputs saved');$('saveStatus').textContent='Saved '+new Date().toLocaleTimeString()}else toast(d.error||'Failed','err');
 }
 
-// ── Init ──
-function refreshAll(){checkHealth();loadAccount();loadActivity();loadClosed()}
-
-// Restore tab from URL hash
+// Init
 const hash=window.location.hash.replace('#','');
-if(hash){
-    const tab=document.querySelector(`.nav-tab[onclick*="'${hash}'"]`);
-    if(tab)showPage(hash,tab);
-}
-
+if(hash){const el=document.querySelector(`.nav-item[onclick*="'${hash}'"]`);if(el)go(hash,el)}
+function refreshAll(){checkHealth();loadAccount();loadActivity();loadClosed()}
 refreshAll();loadPositions();loadOrders();loadSettings();
-setInterval(refreshAll,15000);
-setInterval(loadOrders,30000);
+setInterval(refreshAll,15000);setInterval(loadOrders,30000);
 </script>
 </body>
 </html>
