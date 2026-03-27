@@ -41,6 +41,29 @@ rsi_scanner = RSIScanner()
 # In-memory webhook log storage
 webhook_logs = []
 
+@app.route('/deploy', methods=['POST'])
+def auto_deploy():
+    """Auto-deploy: pull latest code from GitHub and restart"""
+    try:
+        import subprocess
+        # Pull latest from GitHub
+        result = subprocess.run(
+            ['git', 'pull', 'origin', 'main'],
+            cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            capture_output=True, text=True, timeout=30
+        )
+        logger.info(f"Git pull: {result.stdout}")
+        if result.returncode != 0:
+            logger.error(f"Git pull error: {result.stderr}")
+            return jsonify({'success': False, 'error': result.stderr}), 500
+
+        # Restart the service (systemd will bring it back up)
+        subprocess.Popen(['sudo', 'systemctl', 'restart', 'trading-bot'])
+        return jsonify({'success': True, 'message': 'Deploying...', 'git': result.stdout.strip()})
+    except Exception as e:
+        logger.error(f"Deploy error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
