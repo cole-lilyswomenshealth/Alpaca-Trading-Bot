@@ -111,7 +111,7 @@
             <div id="overviewPositions"><div class="empty">Loading...</div></div>
         </div>
         <div class="card">
-            <div class="card-title">Recent Webhooks</div>
+            <div class="card-title">Recent Activity</div>
             <div id="overviewWebhooks"><div class="empty">Loading...</div></div>
         </div>
     </div>
@@ -140,12 +140,12 @@
 <!-- WEBHOOKS PAGE -->
 <div class="page" id="pg-webhooks">
     <div class="grid g3" style="margin-bottom:16px">
-        <div class="card"><div class="stat-val neutral" id="whTotal">0</div><div class="stat-label">TOTAL WEBHOOKS</div></div>
-        <div class="card"><div class="stat-val up" id="whSuccess">0</div><div class="stat-label">SUCCESSFUL</div></div>
-        <div class="card"><div class="stat-val down" id="whFailed">0</div><div class="stat-label">FAILED</div></div>
+        <div class="card"><div class="stat-val neutral" id="whTotal">0</div><div class="stat-label">TOTAL FILLS</div></div>
+        <div class="card"><div class="stat-val up" id="whBuys">0</div><div class="stat-label">BUYS</div></div>
+        <div class="card"><div class="stat-val down" id="whSells">0</div><div class="stat-label">SELLS</div></div>
     </div>
     <div class="card">
-        <div class="card-title">Webhook Log <button class="btn btn-outline btn-sm" onclick="loadWebhooks()">Refresh</button></div>
+        <div class="card-title">Trade Activity (from Alpaca) <button class="btn btn-outline btn-sm" onclick="loadWebhooks()">Refresh</button></div>
         <div id="whTable"><div class="empty">Loading...</div></div>
     </div>
 </div>
@@ -251,34 +251,41 @@ async function loadOrders(){
 
 async function cancelOrd(id){if(!confirm('Cancel order?'))return;const d=await fetch(API+'/api/orders/'+id,{method:'DELETE'}).then(r=>r.json());if(d.success){toast('Cancelled');loadOrders()}else toast(d.error||'Failed','err')}
 
-// ── Webhooks ──
+// ── Webhooks / Trade Activity ──
 async function loadWebhooks(){
-    const d=await api('/api/webhooks');
-    if(!d.success){$('whTable').innerHTML='<div class="empty">Could not load webhooks</div>';return}
-    const wh=d.webhooks||[];
-    const ok=wh.filter(w=>w.status==='success').length;
-    $('whTotal').textContent=d.total||wh.length;$('whSuccess').textContent=ok;$('whFailed').textContent=wh.length-ok;
+    const d=await api('/api/orders?limit=100');
+    if(!d.orders||!d.orders.length){
+        $('whTable').innerHTML='<div class="empty">No trade activity yet</div>';
+        $('overviewWebhooks').innerHTML='<div class="empty">No activity yet</div>';
+        $('whTotal').textContent='0';$('whBuys').textContent='0';$('whSells').textContent='0';return}
 
-    if(!wh.length){$('whTable').innerHTML='<div class="empty">No webhooks received yet</div>';$('overviewWebhooks').innerHTML='<div class="empty">No webhooks yet</div>';return}
-    let h='<table><tr><th>Time</th><th>Symbol</th><th>Action</th><th>Qty</th><th>Status</th><th>Response</th></tr>';
-    wh.forEach(w=>{
-        const t=w.timestamp?new Date(w.timestamp).toLocaleString():'--';
-        const p=w.payload||{};
-        const sc=w.status==='success'?'badge-green':'badge-red';
-        const resp=w.response?JSON.stringify(w.response).substring(0,60):'--';
-        h+=`<tr><td style="font-size:12px;color:var(--muted)">${t}</td><td style="font-weight:600">${p.symbol||'--'}</td><td class="${p.action==='buy'?'up':'down'}">${(p.action||'--').toUpperCase()}</td><td>${p.qty||p.quantity||'--'}</td><td><span class="badge ${sc}">${w.status}</span></td><td style="font-size:11px;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis">${resp}</td></tr>`});
+    const filled=d.orders.filter(o=>o.status==='filled');
+    const buys=filled.filter(o=>o.side==='buy');
+    const sells=filled.filter(o=>o.side==='sell');
+    $('whTotal').textContent=filled.length;$('whBuys').textContent=buys.length;$('whSells').textContent=sells.length;
+
+    let h='<table><tr><th>Time</th><th>Symbol</th><th>Side</th><th>Qty</th><th>Price</th><th>Cost/Proceeds</th><th>Status</th></tr>';
+    d.orders.forEach(o=>{
+        const t=o.filled_at?new Date(o.filled_at).toLocaleString():o.submitted_at?new Date(o.submitted_at).toLocaleString():'--';
+        const sc=o.status==='filled'?'badge-green':o.status==='canceled'?'badge-red':'badge-yellow';
+        const cost=o.filled_avg_price&&o.filled_qty?(o.filled_avg_price*o.filled_qty):0;
+        h+=`<tr><td style="font-size:12px;color:var(--muted)">${t}</td><td style="font-weight:600">${o.symbol}</td><td class="${o.side==='buy'?'up':'down'}">${o.side.toUpperCase()}</td><td>${o.filled_qty||o.qty}</td><td>${o.filled_avg_price?fmt(o.filled_avg_price):'--'}</td><td>${cost?fmt(cost):'--'}</td><td><span class="badge ${sc}">${o.status}</span></td></tr>`});
     h+='</table>';$('whTable').innerHTML=h;
 
-    // Mini version for overview
-    let mh='<table><tr><th>Time</th><th>Symbol</th><th>Status</th></tr>';
-    wh.slice(0,5).forEach(w=>{const p=w.payload||{};const sc=w.status==='success'?'badge-green':'badge-red';mh+=`<tr><td style="font-size:12px;color:var(--muted)">${w.timestamp?new Date(w.timestamp).toLocaleTimeString():'--'}</td><td>${p.symbol||'--'}</td><td><span class="badge ${sc}">${w.status}</span></td></tr>`});
+    // Mini for overview — last 5 filled
+    let mh='<table><tr><th>Time</th><th>Symbol</th><th>Side</th><th>Qty</th></tr>';
+    filled.slice(0,5).forEach(o=>{
+        mh+=`<tr><td style="font-size:12px;color:var(--muted)">${o.filled_at?new Date(o.filled_at).toLocaleTimeString():'--'}</td><td style="font-weight:600">${o.symbol}</td><td class="${o.side==='buy'?'up':'down'}">${o.side.toUpperCase()}</td><td>${o.filled_qty}</td></tr>`});
     mh+='</table>';$('overviewWebhooks').innerHTML=mh;
 }
 
-// ── Closed Trades ──
+// ── Closed Trades (from Alpaca order matching) ──
 async function loadClosed(){
-    const d=await api('/api/closed-positions?limit=200');
-    if(!d.success||!d.positions||!d.positions.length){
+    // Use days=30 and force Alpaca order matching to skip Supabase test data
+    const d=await api('/api/closed-positions?limit=200&days=30');
+    const positions=(d.positions||[]).filter(p=>p.symbol!=='TEST');
+
+    if(!positions.length){
         $('closedTable').innerHTML='<div class="empty">No closed trades</div>';
         $('overviewClosed').innerHTML='<div class="empty">No closed trades today</div>';
         $('clTotalPnl').textContent='$0.00';$('clRoc').textContent='0.00%';$('clCount').textContent='0';return}
@@ -288,7 +295,7 @@ async function loadClosed(){
     const todayTrades=[];
 
     let h='<table><tr><th>Symbol</th><th>Qty</th><th>Entry</th><th>Exit</th><th>P&L</th><th>P&L %</th><th>Closed</th></tr>';
-    d.positions.forEach(p=>{
+    positions.forEach(p=>{
         totalPnl+=p.pnl;totalCost+=p.open_price*p.qty;
         h+=`<tr><td style="font-weight:600">${p.symbol}</td><td>${p.qty}</td><td>${fmt(p.open_price)}</td><td>${fmt(p.close_price)}</td><td class="${plc(p.pnl)}">${fmt(p.pnl)}</td><td class="${plc(p.pnl_pct)}">${pct(p.pnl_pct)}</td><td style="font-size:12px;color:var(--muted)">${p.closed_at?new Date(p.closed_at).toLocaleString():'--'}</td></tr>`;
         if(p.closed_at&&p.closed_at.startsWith(today))todayTrades.push(p);
@@ -298,9 +305,8 @@ async function loadClosed(){
     const roc=totalCost>0?(totalPnl/totalCost*100):0;
     $('clTotalPnl').textContent=fmt(totalPnl);$('clTotalPnl').className='stat-val '+plc(totalPnl);
     $('clRoc').textContent=pct(roc);$('clRoc').className='stat-val '+plc(roc);
-    $('clCount').textContent=d.positions.length;
+    $('clCount').textContent=positions.length;
 
-    // Today's closed for overview
     if(todayTrades.length){
         let todayPnl=0;
         let th='<table><tr><th>Symbol</th><th>P&L</th><th>%</th></tr>';
