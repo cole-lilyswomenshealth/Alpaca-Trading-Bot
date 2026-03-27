@@ -3,107 +3,147 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Maroon Trading Dashboard</title>
+    <title>Maroon Investments</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
-        :root{--bg:#1a0a0e;--surface:#2a0f15;--border:#5c2633;--text:#e8ddd0;--muted:#a08890;--accent:#c4515c;--accent2:#e07070;--green:#4caf50;--red:#f44336;--yellow:#ff9800;--radius:10px}
-        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+        :root{
+            --bg:#0b0e11;--surface:#141820;--surface2:#1a1f2e;--border:#252d3a;
+            --text:#e4e8ef;--muted:#6b7a90;--accent:#4f8cff;--accent-glow:rgba(79,140,255,.12);
+            --green:#00c48c;--green-bg:rgba(0,196,140,.1);
+            --red:#ff5c5c;--red-bg:rgba(255,92,92,.1);
+            --yellow:#ffb84d;--yellow-bg:rgba(255,184,77,.1);
+            --radius:12px;--radius-sm:8px;
+        }
+        body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
 
-        /* Nav */
-        .nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 16px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;height:52px}
-        .nav-brand{font-size:18px;font-weight:700;color:#fff;letter-spacing:.5px}
-        .nav-tabs{display:flex;gap:0;height:100%}
-        .nav-tab{padding:0 16px;height:100%;display:flex;align-items:center;font-size:13px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
-        .nav-tab:hover{color:var(--text)}
-        .nav-tab.active{color:var(--accent2);border-bottom-color:var(--accent)}
-        .server-status{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
-        .dot{width:8px;height:8px;border-radius:50%}
-        .dot.on{background:var(--green);box-shadow:0 0 6px var(--green)}
-        .dot.off{background:var(--red)}
+        /* ── Nav ── */
+        .nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;height:56px;position:sticky;top:0;z-index:100;backdrop-filter:blur(12px)}
+        .nav-brand{font-size:17px;font-weight:700;color:#fff;margin-right:32px;display:flex;align-items:center;gap:8px}
+        .nav-brand svg{width:22px;height:22px}
+        .nav-tabs{display:flex;gap:4px;height:100%;flex:1}
+        .nav-tab{padding:0 14px;height:100%;display:flex;align-items:center;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;border-radius:6px 6px 0 0}
+        .nav-tab:hover{color:var(--text);background:rgba(255,255,255,.03)}
+        .nav-tab.active{color:var(--accent);border-bottom-color:var(--accent);background:var(--accent-glow)}
+        .nav-right{display:flex;align-items:center;gap:12px}
+        .server-pill{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;padding:5px 12px;border-radius:20px;background:var(--surface2);border:1px solid var(--border)}
+        .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+        .dot.on{background:var(--green);box-shadow:0 0 8px var(--green)}
+        .dot.off{background:var(--red);box-shadow:0 0 8px var(--red)}
+        .dot.checking{background:var(--yellow);animation:pulse 1s infinite}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+        .paper-badge{font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;background:var(--yellow-bg);color:var(--yellow);text-transform:uppercase;letter-spacing:.5px}
 
-        /* Layout */
-        .page{display:none;padding:16px;max-width:1200px;margin:0 auto}
+        /* ── Layout ── */
+        .page{display:none;padding:20px 24px;max-width:1280px;margin:0 auto}
         .page.active{display:block}
         .grid{display:grid;gap:16px}
         .g2{grid-template-columns:1fr 1fr}
         .g3{grid-template-columns:1fr 1fr 1fr}
         .g4{grid-template-columns:1fr 1fr 1fr 1fr}
 
-        /* Cards */
-        .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
-        .card-title{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+        /* ── Cards ── */
+        .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;transition:border-color .2s}
+        .card:hover{border-color:rgba(79,140,255,.2)}
+        .card-title{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
 
-        /* Stats */
-        .stat-val{font-size:28px;font-weight:700}
-        .stat-label{font-size:11px;color:var(--muted);margin-top:2px}
-        .up{color:var(--green)}.down{color:var(--red)}.neutral{color:var(--accent2)}
+        /* ── Stat Cards ── */
+        .stat-card{text-align:center;padding:20px 16px}
+        .stat-val{font-size:26px;font-weight:700;letter-spacing:-.5px}
+        .stat-label{font-size:11px;font-weight:500;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+        .up{color:var(--green)}.down{color:var(--red)}.neutral{color:var(--text)}
 
-        /* Table */
+        /* ── Table ── */
         table{width:100%;border-collapse:collapse;font-size:13px}
-        th{text-align:left;padding:8px;color:var(--muted);font-size:11px;text-transform:uppercase;border-bottom:1px solid var(--border)}
-        td{padding:8px;border-bottom:1px solid rgba(92,38,51,.3)}
-        tr:hover{background:rgba(196,81,92,.05)}
+        th{text-align:left;padding:10px 12px;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)}
+        td{padding:10px 12px;border-bottom:1px solid rgba(37,45,58,.5)}
+        tr:hover{background:rgba(79,140,255,.03)}
+        .sym{font-weight:600;color:#fff}
 
-        /* Form */
-        label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px}
-        input,select{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:8px;font-size:14px;outline:none}
-        input:focus,select:focus{border-color:var(--accent)}
-        .field{margin-bottom:14px}
-        .row{display:flex;gap:12px}.row>div{flex:1}
+        /* ── Form ── */
+        label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px}
+        input,select{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:var(--radius-sm);font-size:14px;font-family:inherit;outline:none;transition:border-color .2s}
+        input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+        .field{margin-bottom:16px}
+        .row{display:flex;gap:14px}.row>div{flex:1}
 
-        /* Toggle */
-        .toggle-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid rgba(92,38,51,.3)}
+        /* ── Toggle ── */
+        .toggle-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid rgba(37,45,58,.5)}
+        .toggle-row:last-child{border-bottom:none}
         .toggle-info .t-label{font-size:14px;font-weight:500}
-        .toggle-info .t-desc{font-size:11px;color:var(--muted);margin-top:2px}
-        .toggle{width:44px;height:24px;background:#333;border-radius:12px;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0}
+        .toggle-info .t-desc{font-size:12px;color:var(--muted);margin-top:3px}
+        .toggle{width:44px;height:24px;background:var(--border);border-radius:12px;cursor:pointer;position:relative;transition:background .25s;flex-shrink:0}
         .toggle.on{background:var(--accent)}
-        .toggle::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform .2s}
+        .toggle::after{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform .25s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
         .toggle.on::after{transform:translateX(20px)}
 
-        /* Buttons */
-        .btn{padding:8px 16px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s}
-        .btn:hover{opacity:.85}
+        /* ── Buttons ── */
+        .btn{padding:8px 16px;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit}
+        .btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.2)}
+        .btn:active{transform:translateY(0)}
         .btn-accent{background:var(--accent);color:#fff}
-        .btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}
+        .btn-outline{background:transparent;border:1px solid var(--border);color:var(--muted)}
+        .btn-outline:hover{border-color:var(--accent);color:var(--accent)}
         .btn-green{background:var(--green);color:#fff}
         .btn-red{background:var(--red);color:#fff}
-        .btn-sm{padding:4px 10px;font-size:11px}
+        .btn-sm{padding:4px 10px;font-size:11px;border-radius:6px}
 
-        /* Toast */
-        .toast{position:fixed;bottom:20px;right:20px;padding:12px 20px;border-radius:8px;font-size:13px;z-index:1000;animation:slideIn .3s;color:#fff}
+        /* ── Badges ── */
+        .badge{display:inline-block;padding:3px 10px;border-radius:6px;font-size:11px;font-weight:600}
+        .badge-green{background:var(--green-bg);color:var(--green)}
+        .badge-red{background:var(--red-bg);color:var(--red)}
+        .badge-yellow{background:var(--yellow-bg);color:var(--yellow)}
+        .badge-blue{background:var(--accent-glow);color:var(--accent)}
+
+        /* ── Toast ── */
+        .toast{position:fixed;bottom:24px;right:24px;padding:14px 22px;border-radius:var(--radius);font-size:13px;font-weight:500;z-index:1000;animation:slideIn .3s;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.3)}
         .toast.ok{background:var(--green)}.toast.err{background:var(--red)}
-        @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+        @keyframes slideIn{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
 
-        .empty{text-align:center;padding:30px;color:var(--muted);font-size:13px}
-        .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
-        .badge-green{background:rgba(76,175,80,.15);color:var(--green)}
-        .badge-red{background:rgba(244,67,54,.15);color:var(--red)}
-        .badge-yellow{background:rgba(255,152,0,.15);color:var(--yellow)}
+        .empty{text-align:center;padding:32px;color:var(--muted);font-size:13px}
+        .section-divider{height:1px;background:var(--border);margin:20px 0}
 
-        @media(max-width:768px){.g2,.g3,.g4{grid-template-columns:1fr}.row{flex-direction:column}.nav-tabs{overflow-x:auto}.nav-tab{white-space:nowrap;font-size:12px;padding:0 10px}}
+        /* ── Responsive ── */
+        @media(max-width:768px){
+            .g2,.g3,.g4{grid-template-columns:1fr}
+            .row{flex-direction:column}
+            .nav{padding:0 12px}
+            .nav-brand{margin-right:12px;font-size:15px}
+            .nav-tabs{overflow-x:auto;-webkit-overflow-scrolling:touch}
+            .nav-tab{white-space:nowrap;font-size:12px;padding:0 10px}
+            .page{padding:12px}
+            .stat-val{font-size:22px}
+        }
     </style>
 </head>
 <body>
 <div class="nav">
-    <span class="nav-brand">Maroon Investments</span>
+    <span class="nav-brand">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 4 5-9"/></svg>
+        Maroon Investments
+    </span>
     <div class="nav-tabs">
         <div class="nav-tab active" onclick="showPage('overview',this)">Overview</div>
         <div class="nav-tab" onclick="showPage('positions',this)">Positions</div>
         <div class="nav-tab" onclick="showPage('orders',this)">Orders</div>
-        <div class="nav-tab" onclick="showPage('webhooks',this)">Webhooks</div>
+        <div class="nav-tab" onclick="showPage('activity',this)">Activity</div>
         <div class="nav-tab" onclick="showPage('closed',this)">Closed Trades</div>
         <div class="nav-tab" onclick="showPage('settings',this)">Settings</div>
     </div>
-    <div class="server-status"><div class="dot" id="serverDot"></div><span id="serverText">Checking...</span></div>
+    <div class="nav-right">
+        <span class="paper-badge" id="modeBadge">PAPER</span>
+        <div class="server-pill"><div class="dot checking" id="serverDot"></div><span id="serverText">Checking...</span></div>
+    </div>
 </div>
 
-<!-- OVERVIEW PAGE -->
+<!-- OVERVIEW -->
 <div class="page active" id="pg-overview">
     <div class="grid g4" style="margin-bottom:16px">
-        <div class="card"><div class="stat-val neutral" id="equity">--</div><div class="stat-label">PORTFOLIO VALUE</div></div>
-        <div class="card"><div class="stat-val" id="dayPl">--</div><div class="stat-label">DAY P&L</div></div>
-        <div class="card"><div class="stat-val neutral" id="buyPow">--</div><div class="stat-label">BUYING POWER</div></div>
-        <div class="card"><div class="stat-val neutral" id="openPos">--</div><div class="stat-label">OPEN POSITIONS</div></div>
+        <div class="card stat-card"><div class="stat-val neutral" id="equity">--</div><div class="stat-label">Portfolio Value</div></div>
+        <div class="card stat-card"><div class="stat-val" id="dayPl">--</div><div class="stat-label">Day P&L</div></div>
+        <div class="card stat-card"><div class="stat-val neutral" id="buyPow">--</div><div class="stat-label">Buying Power</div></div>
+        <div class="card stat-card"><div class="stat-val neutral" id="openPos">--</div><div class="stat-label">Open Positions</div></div>
     </div>
     <div class="grid g2">
         <div class="card">
@@ -112,16 +152,16 @@
         </div>
         <div class="card">
             <div class="card-title">Recent Activity</div>
-            <div id="overviewWebhooks"><div class="empty">Loading...</div></div>
+            <div id="overviewActivity"><div class="empty">Loading...</div></div>
         </div>
     </div>
     <div class="card" style="margin-top:16px">
-        <div class="card-title">Closed Trades (Today) <span id="closedPnlBadge"></span></div>
+        <div class="card-title">Today's Closed Trades <span id="closedPnlBadge"></span></div>
         <div id="overviewClosed"><div class="empty">Loading...</div></div>
     </div>
 </div>
 
-<!-- POSITIONS PAGE -->
+<!-- POSITIONS -->
 <div class="page" id="pg-positions">
     <div class="card">
         <div class="card-title">All Open Positions <button class="btn btn-outline btn-sm" onclick="loadPositions()">Refresh</button></div>
@@ -129,7 +169,7 @@
     </div>
 </div>
 
-<!-- ORDERS PAGE -->
+<!-- ORDERS -->
 <div class="page" id="pg-orders">
     <div class="card">
         <div class="card-title">Order History <button class="btn btn-outline btn-sm" onclick="loadOrders()">Refresh</button></div>
@@ -137,25 +177,25 @@
     </div>
 </div>
 
-<!-- WEBHOOKS PAGE -->
-<div class="page" id="pg-webhooks">
+<!-- ACTIVITY -->
+<div class="page" id="pg-activity">
     <div class="grid g3" style="margin-bottom:16px">
-        <div class="card"><div class="stat-val neutral" id="whTotal">0</div><div class="stat-label">TOTAL FILLS</div></div>
-        <div class="card"><div class="stat-val up" id="whBuys">0</div><div class="stat-label">BUYS</div></div>
-        <div class="card"><div class="stat-val down" id="whSells">0</div><div class="stat-label">SELLS</div></div>
+        <div class="card stat-card"><div class="stat-val neutral" id="whTotal">0</div><div class="stat-label">Total Fills</div></div>
+        <div class="card stat-card"><div class="stat-val up" id="whBuys">0</div><div class="stat-label">Buys</div></div>
+        <div class="card stat-card"><div class="stat-val down" id="whSells">0</div><div class="stat-label">Sells</div></div>
     </div>
     <div class="card">
-        <div class="card-title">Trade Activity (from Alpaca) <button class="btn btn-outline btn-sm" onclick="loadWebhooks()">Refresh</button></div>
-        <div id="whTable"><div class="empty">Loading...</div></div>
+        <div class="card-title">Trade Activity <button class="btn btn-outline btn-sm" onclick="loadActivity()">Refresh</button></div>
+        <div id="actTable"><div class="empty">Loading...</div></div>
     </div>
 </div>
 
-<!-- CLOSED TRADES PAGE -->
+<!-- CLOSED TRADES -->
 <div class="page" id="pg-closed">
     <div class="grid g3" style="margin-bottom:16px">
-        <div class="card"><div class="stat-val" id="clTotalPnl">--</div><div class="stat-label">TOTAL REALIZED P&L</div></div>
-        <div class="card"><div class="stat-val" id="clRoc">--</div><div class="stat-label">RETURN ON CAPITAL</div></div>
-        <div class="card"><div class="stat-val neutral" id="clCount">0</div><div class="stat-label">CLOSED TRADES</div></div>
+        <div class="card stat-card"><div class="stat-val" id="clTotalPnl">--</div><div class="stat-label">Total Realized P&L</div></div>
+        <div class="card stat-card"><div class="stat-val" id="clRoc">--</div><div class="stat-label">Return on Capital</div></div>
+        <div class="card stat-card"><div class="stat-val neutral" id="clCount">0</div><div class="stat-label">Closed Trades</div></div>
     </div>
     <div class="card">
         <div class="card-title">Closed Trades <button class="btn btn-outline btn-sm" onclick="loadClosed()">Refresh</button></div>
@@ -163,7 +203,7 @@
     </div>
 </div>
 
-<!-- SETTINGS PAGE -->
+<!-- SETTINGS -->
 <div class="page" id="pg-settings">
     <div class="card" style="margin-bottom:16px">
         <div class="card-title">Trading Controls</div>
@@ -177,8 +217,8 @@
         <div class="card-title">Risk Management</div>
         <div id="settingsRisk"></div>
     </div>
-    <div style="text-align:center;margin-top:12px">
-        <button class="btn btn-accent" onclick="saveSettings()" style="padding:12px 40px;font-size:15px">Save All Settings</button>
+    <div style="text-align:center;margin-top:16px">
+        <button class="btn btn-accent" onclick="saveSettings()" style="padding:14px 48px;font-size:15px;border-radius:var(--radius)">Save All Settings</button>
         <div style="font-size:11px;color:var(--muted);margin-top:8px" id="saveStatus"></div>
     </div>
 </div>
@@ -194,14 +234,25 @@ function plc(n){return n>0?'up':n<0?'down':'neutral'}
 function toast(m,t='ok'){const e=document.createElement('div');e.className='toast '+t;e.textContent=m;document.body.appendChild(e);setTimeout(()=>e.remove(),3500)}
 function showPage(id,el){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));$('pg-'+id).classList.add('active');if(el)el.classList.add('active')}
 
-async function api(path){try{const r=await fetch(API+path);return await r.json()}catch(e){return{success:false,error:e.message}}}
+async function api(path){try{const r=await fetch(API+path);if(!r.ok)throw new Error(r.status);return await r.json()}catch(e){return{success:false,error:e.message}}}
 async function apiPost(path,body){try{const r=await fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});return await r.json()}catch(e){return{success:false,error:e.message}}}
 
-// ── Health ──
+// ── Health Check ──
 async function checkHealth(){
-    const d=await api('/health');
-    if(d.status==='healthy'){$('serverDot').className='dot on';$('serverText').textContent='Server Online'}
-    else{$('serverDot').className='dot off';$('serverText').textContent='Offline'}
+    try{
+        const r=await fetch(API+'/health',{signal:AbortSignal.timeout(5000)});
+        const d=await r.json();
+        if(d.status==='healthy'){
+            $('serverDot').className='dot on';
+            $('serverText').textContent='Online';
+            $('modeBadge').textContent=d.paper_trading?'PAPER':'LIVE';
+            $('modeBadge').style.background=d.paper_trading?'var(--yellow-bg)':'var(--green-bg)';
+            $('modeBadge').style.color=d.paper_trading?'var(--yellow)':'var(--green)';
+        }else throw new Error();
+    }catch(e){
+        $('serverDot').className='dot off';
+        $('serverText').textContent='Offline';
+    }
 }
 
 // ── Account ──
@@ -211,14 +262,14 @@ async function loadAccount(){
     const a=d.account;
     $('equity').textContent=fmt(a.equity);
     const dayChange=a.equity-a.last_equity;
-    $('dayPl').textContent=fmt(dayChange);$('dayPl').className='stat-val '+plc(dayChange);
+    $('dayPl').textContent=(dayChange>=0?'+':'')+fmt(dayChange);
+    $('dayPl').className='stat-val '+plc(dayChange);
     $('buyPow').textContent=fmt(a.buying_power);
     $('openPos').textContent=d.total_positions;
 
-    // Positions mini table
     if(d.positions&&d.positions.length){
-        let h='<table><tr><th>Symbol</th><th>Qty</th><th>P&L</th></tr>';
-        d.positions.forEach(p=>{h+=`<tr><td style="font-weight:600">${p.symbol}</td><td>${p.qty}</td><td class="${plc(p.unrealized_pl)}">${fmt(p.unrealized_pl)}</td></tr>`});
+        let h='<table><tr><th>Symbol</th><th>Qty</th><th>Current</th><th>P&L</th></tr>';
+        d.positions.forEach(p=>{h+=`<tr><td class="sym">${p.symbol}</td><td>${p.qty}</td><td>${fmt(p.current_price)}</td><td class="${plc(p.unrealized_pl)}">${fmt(p.unrealized_pl)}</td></tr>`});
         h+='</table>';$('overviewPositions').innerHTML=h;
     }else $('overviewPositions').innerHTML='<div class="empty">No open positions</div>';
 }
@@ -230,10 +281,9 @@ async function loadPositions(){
     let h='<table><tr><th>Symbol</th><th>Side</th><th>Qty</th><th>Avg Entry</th><th>Current</th><th>Market Value</th><th>P&L</th><th>P&L %</th><th></th></tr>';
     d.positions.forEach(p=>{
         const plPct=(p.unrealized_plpc*100);
-        h+=`<tr><td style="font-weight:600">${p.symbol}</td><td>${p.side}</td><td>${p.qty}</td><td>${fmt(p.avg_entry_price)}</td><td>${fmt(p.current_price)}</td><td>${fmt(p.market_value)}</td><td class="${plc(p.unrealized_pl)}">${fmt(p.unrealized_pl)}</td><td class="${plc(plPct)}">${pct(plPct)}</td><td><button class="btn btn-red btn-sm" onclick="closePos('${p.symbol}')">Close</button></td></tr>`});
+        h+=`<tr><td class="sym">${p.symbol}</td><td>${p.side}</td><td>${p.qty}</td><td>${fmt(p.avg_entry_price)}</td><td>${fmt(p.current_price)}</td><td>${fmt(p.market_value)}</td><td class="${plc(p.unrealized_pl)}">${fmt(p.unrealized_pl)}</td><td class="${plc(plPct)}">${pct(plPct)}</td><td><button class="btn btn-red btn-sm" onclick="closePos('${p.symbol}')">Close</button></td></tr>`});
     h+='</table>';$('posTable').innerHTML=h;
 }
-
 async function closePos(sym){if(!confirm('Close '+sym+'?'))return;const d=await fetch(API+'/api/positions/'+sym,{method:'DELETE'}).then(r=>r.json());if(d.success){toast('Closed '+sym);loadAccount();loadPositions()}else toast(d.error||'Failed','err')}
 
 // ── Orders ──
@@ -245,18 +295,17 @@ async function loadOrders(){
         const t=o.filled_at?new Date(o.filled_at).toLocaleString():o.submitted_at?new Date(o.submitted_at).toLocaleString():'--';
         const sc=o.status==='filled'?'badge-green':o.status==='canceled'?'badge-red':'badge-yellow';
         const canCancel=['new','accepted','pending_new','partially_filled'].includes(o.status);
-        h+=`<tr><td style="color:var(--muted);font-size:12px">${t}</td><td style="font-weight:600">${o.symbol}</td><td class="${o.side==='buy'?'up':'down'}">${o.side.toUpperCase()}</td><td>${o.qty}</td><td>${o.filled_qty||0}</td><td>${o.filled_avg_price?fmt(o.filled_avg_price):'--'}</td><td><span class="badge ${sc}">${o.status}</span></td><td>${canCancel?`<button class="btn btn-outline btn-sm" onclick="cancelOrd('${o.id}')">Cancel</button>`:''}</td></tr>`});
+        h+=`<tr><td style="color:var(--muted);font-size:12px">${t}</td><td class="sym">${o.symbol}</td><td class="${o.side==='buy'?'up':'down'}">${o.side.toUpperCase()}</td><td>${o.qty}</td><td>${o.filled_qty||0}</td><td>${o.filled_avg_price?fmt(o.filled_avg_price):'--'}</td><td><span class="badge ${sc}">${o.status}</span></td><td>${canCancel?`<button class="btn btn-outline btn-sm" onclick="cancelOrd('${o.id}')">Cancel</button>`:''}</td></tr>`});
     h+='</table>';$('ordersTable').innerHTML=h;
 }
-
 async function cancelOrd(id){if(!confirm('Cancel order?'))return;const d=await fetch(API+'/api/orders/'+id,{method:'DELETE'}).then(r=>r.json());if(d.success){toast('Cancelled');loadOrders()}else toast(d.error||'Failed','err')}
 
-// ── Webhooks / Trade Activity ──
-async function loadWebhooks(){
+// ── Activity (from Alpaca orders) ──
+async function loadActivity(){
     const d=await api('/api/orders?limit=100');
     if(!d.orders||!d.orders.length){
-        $('whTable').innerHTML='<div class="empty">No trade activity yet</div>';
-        $('overviewWebhooks').innerHTML='<div class="empty">No activity yet</div>';
+        $('actTable').innerHTML='<div class="empty">No trade activity yet</div>';
+        $('overviewActivity').innerHTML='<div class="empty">No activity yet</div>';
         $('whTotal').textContent='0';$('whBuys').textContent='0';$('whSells').textContent='0';return}
 
     const filled=d.orders.filter(o=>o.status==='filled');
@@ -264,24 +313,22 @@ async function loadWebhooks(){
     const sells=filled.filter(o=>o.side==='sell');
     $('whTotal').textContent=filled.length;$('whBuys').textContent=buys.length;$('whSells').textContent=sells.length;
 
-    let h='<table><tr><th>Time</th><th>Symbol</th><th>Side</th><th>Qty</th><th>Price</th><th>Cost/Proceeds</th><th>Status</th></tr>';
+    let h='<table><tr><th>Time</th><th>Symbol</th><th>Side</th><th>Qty</th><th>Price</th><th>Cost / Proceeds</th><th>Status</th></tr>';
     d.orders.forEach(o=>{
         const t=o.filled_at?new Date(o.filled_at).toLocaleString():o.submitted_at?new Date(o.submitted_at).toLocaleString():'--';
         const sc=o.status==='filled'?'badge-green':o.status==='canceled'?'badge-red':'badge-yellow';
         const cost=o.filled_avg_price&&o.filled_qty?(o.filled_avg_price*o.filled_qty):0;
-        h+=`<tr><td style="font-size:12px;color:var(--muted)">${t}</td><td style="font-weight:600">${o.symbol}</td><td class="${o.side==='buy'?'up':'down'}">${o.side.toUpperCase()}</td><td>${o.filled_qty||o.qty}</td><td>${o.filled_avg_price?fmt(o.filled_avg_price):'--'}</td><td>${cost?fmt(cost):'--'}</td><td><span class="badge ${sc}">${o.status}</span></td></tr>`});
-    h+='</table>';$('whTable').innerHTML=h;
+        h+=`<tr><td style="font-size:12px;color:var(--muted)">${t}</td><td class="sym">${o.symbol}</td><td class="${o.side==='buy'?'up':'down'}">${o.side.toUpperCase()}</td><td>${o.filled_qty||o.qty}</td><td>${o.filled_avg_price?fmt(o.filled_avg_price):'--'}</td><td>${cost?fmt(cost):'--'}</td><td><span class="badge ${sc}">${o.status}</span></td></tr>`});
+    h+='</table>';$('actTable').innerHTML=h;
 
-    // Mini for overview — last 5 filled
     let mh='<table><tr><th>Time</th><th>Symbol</th><th>Side</th><th>Qty</th></tr>';
     filled.slice(0,5).forEach(o=>{
-        mh+=`<tr><td style="font-size:12px;color:var(--muted)">${o.filled_at?new Date(o.filled_at).toLocaleTimeString():'--'}</td><td style="font-weight:600">${o.symbol}</td><td class="${o.side==='buy'?'up':'down'}">${o.side.toUpperCase()}</td><td>${o.filled_qty}</td></tr>`});
-    mh+='</table>';$('overviewWebhooks').innerHTML=mh;
+        mh+=`<tr><td style="font-size:12px;color:var(--muted)">${o.filled_at?new Date(o.filled_at).toLocaleTimeString():'--'}</td><td class="sym">${o.symbol}</td><td class="${o.side==='buy'?'up':'down'}">${o.side.toUpperCase()}</td><td>${o.filled_qty}</td></tr>`});
+    mh+='</table>';$('overviewActivity').innerHTML=mh;
 }
 
-// ── Closed Trades (from Alpaca order matching) ──
+// ── Closed Trades ──
 async function loadClosed(){
-    // Use days=30 and force Alpaca order matching to skip Supabase test data
     const d=await api('/api/closed-positions?limit=200&days=30');
     const positions=(d.positions||[]).filter(p=>p.symbol!=='TEST');
 
@@ -297,7 +344,7 @@ async function loadClosed(){
     let h='<table><tr><th>Symbol</th><th>Qty</th><th>Entry</th><th>Exit</th><th>P&L</th><th>P&L %</th><th>Closed</th></tr>';
     positions.forEach(p=>{
         totalPnl+=p.pnl;totalCost+=p.open_price*p.qty;
-        h+=`<tr><td style="font-weight:600">${p.symbol}</td><td>${p.qty}</td><td>${fmt(p.open_price)}</td><td>${fmt(p.close_price)}</td><td class="${plc(p.pnl)}">${fmt(p.pnl)}</td><td class="${plc(p.pnl_pct)}">${pct(p.pnl_pct)}</td><td style="font-size:12px;color:var(--muted)">${p.closed_at?new Date(p.closed_at).toLocaleString():'--'}</td></tr>`;
+        h+=`<tr><td class="sym">${p.symbol}</td><td>${p.qty}</td><td>${fmt(p.open_price)}</td><td>${fmt(p.close_price)}</td><td class="${plc(p.pnl)}">${fmt(p.pnl)}</td><td class="${plc(p.pnl_pct)}">${pct(p.pnl_pct)}</td><td style="font-size:12px;color:var(--muted)">${p.closed_at?new Date(p.closed_at).toLocaleString():'--'}</td></tr>`;
         if(p.closed_at&&p.closed_at.startsWith(today))todayTrades.push(p);
     });
     h+='</table>';$('closedTable').innerHTML=h;
@@ -310,7 +357,7 @@ async function loadClosed(){
     if(todayTrades.length){
         let todayPnl=0;
         let th='<table><tr><th>Symbol</th><th>P&L</th><th>%</th></tr>';
-        todayTrades.forEach(p=>{todayPnl+=p.pnl;th+=`<tr><td style="font-weight:600">${p.symbol}</td><td class="${plc(p.pnl)}">${fmt(p.pnl)}</td><td class="${plc(p.pnl_pct)}">${pct(p.pnl_pct)}</td></tr>`});
+        todayTrades.forEach(p=>{todayPnl+=p.pnl;th+=`<tr><td class="sym">${p.symbol}</td><td class="${plc(p.pnl)}">${fmt(p.pnl)}</td><td class="${plc(p.pnl_pct)}">${pct(p.pnl_pct)}</td></tr>`});
         th+='</table>';$('overviewClosed').innerHTML=th;
         $('closedPnlBadge').innerHTML=`<span class="badge ${todayPnl>=0?'badge-green':'badge-red'}">${fmt(todayPnl)}</span>`;
     }else{$('overviewClosed').innerHTML='<div class="empty">No closed trades today</div>';$('closedPnlBadge').innerHTML=''}
@@ -322,21 +369,18 @@ async function loadSettings(){
     if(!d.success)return;
     settings=d.settings;
 
-    // Toggles
     let thtml='';
-    [{k:'trading_enabled',l:'Trading Enabled',d:'Master kill switch for all trading'},
+    [{k:'trading_enabled',l:'Trading Enabled',d:'Master kill switch — disables all order execution when off'},
      {k:'profit_protection_enabled',l:'Profit Protection',d:'Only sell positions that are in profit'}].forEach(t=>{
         thtml+=`<div class="toggle-row"><div class="toggle-info"><div class="t-label">${t.l}</div><div class="t-desc">${t.d}</div></div><div class="toggle ${settings[t.k]?'on':''}" onclick="this.classList.toggle('on')" data-key="${t.k}"></div></div>`;
     });
     $('settingsToggles').innerHTML=thtml;
 
-    // Fibonacci
-    let fhtml=`<div class="toggle-row" style="margin-bottom:14px"><div class="toggle-info"><div class="t-label">Fibonacci Sizing</div><div class="t-desc">Use Fibonacci sequence for position sizing</div></div><div class="toggle ${settings.fibonacci_enabled?'on':''}" onclick="this.classList.toggle('on')" data-key="fibonacci_enabled"></div></div>`;
+    let fhtml=`<div class="toggle-row" style="margin-bottom:16px"><div class="toggle-info"><div class="t-label">Fibonacci Sizing</div><div class="t-desc">Use Fibonacci sequence for position sizing</div></div><div class="toggle ${settings.fibonacci_enabled?'on':''}" onclick="this.classList.toggle('on')" data-key="fibonacci_enabled"></div></div>`;
     fhtml+=`<div class="row"><div class="field"><label>Base Quantity</label><input type="number" id="s_fib_base" step="0.01" value="${settings.fibonacci_base||0.1}"></div><div class="field"><label>Max Iterations</label><input type="number" id="s_fib_max" step="1" value="${settings.fibonacci_max_iterations||8}"></div></div>`;
     fhtml+=`<div class="field"><label>Symbol-Specific Bases (JSON)</label><input type="text" id="s_fib_symbols" value='${JSON.stringify(settings.fibonacci_symbol_bases||{})}'></div>`;
     $('settingsFib').innerHTML=fhtml;
 
-    // Risk
     let rhtml=`<div class="row"><div class="field"><label>Max Position Size ($)</label><input type="number" id="s_max_pos" step="100" value="${settings.max_position_size||10000}"></div><div class="field"><label>Max Open Positions</label><input type="number" id="s_max_open" step="1" value="${settings.max_open_positions||10}"></div></div>`;
     rhtml+=`<div class="row"><div class="field"><label>Max Daily Loss ($)</label><input type="number" id="s_max_loss" step="100" value="${settings.max_daily_loss||500}"></div><div class="field"><label>Min Profit to Sell (%)</label><input type="number" id="s_profit_thresh" step="0.1" value="${settings.profit_protection_threshold||0}"></div></div>`;
     $('settingsRisk').innerHTML=rhtml;
@@ -345,7 +389,6 @@ async function loadSettings(){
 async function saveSettings(){
     const toggles={};
     document.querySelectorAll('.toggle[data-key]').forEach(t=>{toggles[t.dataset.key]=t.classList.contains('on')});
-
     const payload={
         ...toggles,
         fibonacci_base:parseFloat($('s_fib_base').value),
@@ -356,14 +399,13 @@ async function saveSettings(){
         max_daily_loss:parseFloat($('s_max_loss').value),
         profit_protection_threshold:parseFloat($('s_profit_thresh').value),
     };
-
     const d=await apiPost('/api/settings',payload);
     if(d.success){toast('Settings saved');$('saveStatus').textContent='Saved '+new Date().toLocaleTimeString()}
     else toast(d.error||'Failed to save','err');
 }
 
 // ── Init ──
-function refreshAll(){checkHealth();loadAccount();loadWebhooks();loadClosed()}
+function refreshAll(){checkHealth();loadAccount();loadActivity();loadClosed()}
 refreshAll();loadPositions();loadOrders();loadSettings();
 setInterval(refreshAll,15000);
 setInterval(loadOrders,30000);
