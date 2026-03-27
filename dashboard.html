@@ -129,7 +129,7 @@
         <div class="nav-tab" onclick="showPage('orders',this)">Orders</div>
         <div class="nav-tab" onclick="showPage('activity',this)">Activity</div>
         <div class="nav-tab" onclick="showPage('closed',this)">Closed Trades</div>
-        <div class="nav-tab" onclick="showPage('settings',this)">Settings</div>
+        <div class="nav-tab" onclick="showPage('settings',this)">Inputs</div>
     </div>
     <div class="nav-right">
         <span class="paper-badge" id="modeBadge">PAPER</span>
@@ -203,11 +203,15 @@
     </div>
 </div>
 
-<!-- SETTINGS -->
+<!-- SETTINGS / INPUTS -->
 <div class="page" id="pg-settings">
     <div class="card" style="margin-bottom:16px">
         <div class="card-title">Trading Controls</div>
         <div id="settingsToggles"></div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+        <div class="card-title">Profit Protection</div>
+        <div id="settingsProfit"></div>
     </div>
     <div class="card" style="margin-bottom:16px">
         <div class="card-title">Fibonacci Position Sizing</div>
@@ -232,7 +236,13 @@ function fmt(n){return n!=null?'$'+Number(n).toLocaleString('en-US',{minimumFrac
 function pct(n){return n!=null?Number(n).toFixed(2)+'%':'--'}
 function plc(n){return n>0?'up':n<0?'down':'neutral'}
 function toast(m,t='ok'){const e=document.createElement('div');e.className='toast '+t;e.textContent=m;document.body.appendChild(e);setTimeout(()=>e.remove(),3500)}
-function showPage(id,el){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));$('pg-'+id).classList.add('active');if(el)el.classList.add('active')}
+function showPage(id,el){
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+    $('pg-'+id).classList.add('active');
+    if(el)el.classList.add('active');
+    window.location.hash=id;
+}
 
 async function api(path){try{const r=await fetch(API+path);if(!r.ok)throw new Error(r.status);return await r.json()}catch(e){return{success:false,error:e.message}}}
 async function apiPost(path,body){try{const r=await fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});return await r.json()}catch(e){return{success:false,error:e.message}}}
@@ -370,11 +380,16 @@ async function loadSettings(){
     settings=d.settings;
 
     let thtml='';
-    [{k:'trading_enabled',l:'Trading Enabled',d:'Master kill switch — disables all order execution when off'},
-     {k:'profit_protection_enabled',l:'Profit Protection',d:'Only sell positions that are in profit'}].forEach(t=>{
+    [{k:'trading_enabled',l:'Trading Enabled',d:'Master kill switch — disables all order execution when off'}].forEach(t=>{
         thtml+=`<div class="toggle-row"><div class="toggle-info"><div class="t-label">${t.l}</div><div class="t-desc">${t.d}</div></div><div class="toggle ${settings[t.k]?'on':''}" onclick="this.classList.toggle('on')" data-key="${t.k}"></div></div>`;
     });
     $('settingsToggles').innerHTML=thtml;
+
+    // Profit Protection
+    let phtml=`<div class="toggle-row" style="margin-bottom:16px"><div class="toggle-info"><div class="t-label">Profit Protection</div><div class="t-desc">Only sell positions that meet the minimum profit threshold</div></div><div class="toggle ${settings.profit_protection_enabled?'on':''}" onclick="this.classList.toggle('on')" data-key="profit_protection_enabled"></div></div>`;
+    phtml+=`<div class="field"><label>Minimum Profit % Required to Sell</label><input type="number" id="s_profit_thresh" step="0.1" min="0" value="${settings.profit_protection_threshold||0}"></div>`;
+    phtml+=`<div style="font-size:12px;color:var(--muted);margin-top:-8px;padding:0 2px">Set to 0 to sell at any profit. Set to 1.0 to require 1% profit before allowing a sell. Set to 5.0 to require 5% profit, etc.</div>`;
+    $('settingsProfit').innerHTML=phtml;
 
     let fhtml=`<div class="toggle-row" style="margin-bottom:16px"><div class="toggle-info"><div class="t-label">Fibonacci Sizing</div><div class="t-desc">Use Fibonacci sequence for position sizing</div></div><div class="toggle ${settings.fibonacci_enabled?'on':''}" onclick="this.classList.toggle('on')" data-key="fibonacci_enabled"></div></div>`;
     fhtml+=`<div class="row"><div class="field"><label>Base Quantity</label><input type="number" id="s_fib_base" step="0.01" value="${settings.fibonacci_base||0.1}"></div><div class="field"><label>Max Iterations</label><input type="number" id="s_fib_max" step="1" value="${settings.fibonacci_max_iterations||8}"></div></div>`;
@@ -382,7 +397,7 @@ async function loadSettings(){
     $('settingsFib').innerHTML=fhtml;
 
     let rhtml=`<div class="row"><div class="field"><label>Max Position Size ($)</label><input type="number" id="s_max_pos" step="100" value="${settings.max_position_size||10000}"></div><div class="field"><label>Max Open Positions</label><input type="number" id="s_max_open" step="1" value="${settings.max_open_positions||10}"></div></div>`;
-    rhtml+=`<div class="row"><div class="field"><label>Max Daily Loss ($)</label><input type="number" id="s_max_loss" step="100" value="${settings.max_daily_loss||500}"></div><div class="field"><label>Min Profit to Sell (%)</label><input type="number" id="s_profit_thresh" step="0.1" value="${settings.profit_protection_threshold||0}"></div></div>`;
+    rhtml+=`<div class="field"><label>Max Daily Loss ($)</label><input type="number" id="s_max_loss" step="100" value="${settings.max_daily_loss||500}"></div>`;
     $('settingsRisk').innerHTML=rhtml;
 }
 
@@ -406,6 +421,14 @@ async function saveSettings(){
 
 // ── Init ──
 function refreshAll(){checkHealth();loadAccount();loadActivity();loadClosed()}
+
+// Restore tab from URL hash
+const hash=window.location.hash.replace('#','');
+if(hash){
+    const tab=document.querySelector(`.nav-tab[onclick*="'${hash}'"]`);
+    if(tab)showPage(hash,tab);
+}
+
 refreshAll();loadPositions();loadOrders();loadSettings();
 setInterval(refreshAll,15000);
 setInterval(loadOrders,30000);

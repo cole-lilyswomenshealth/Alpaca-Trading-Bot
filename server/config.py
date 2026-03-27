@@ -78,11 +78,24 @@ class Config:
         return self._supabase
 
     def _load_settings(self):
-        """Load settings from Supabase with caching"""
+        """Load settings from local JSON file with caching"""
         now = time.time()
         if self._cache and (now - self._cache_time) < self._cache_ttl:
             return self._cache
 
+        # Read from local settings.json file
+        try:
+            import json
+            settings_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'settings.json')
+            if os.path.exists(settings_file):
+                with open(settings_file, 'r') as f:
+                    self._cache = json.load(f)
+                self._cache_time = now
+                return self._cache
+        except Exception as e:
+            logger.warning(f"Failed to load settings.json: {e}")
+
+        # Fallback: try Supabase
         sb = self._get_supabase()
         if sb and sb.is_connected():
             try:

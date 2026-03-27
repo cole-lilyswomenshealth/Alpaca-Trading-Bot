@@ -1403,6 +1403,39 @@ def get_autonomous_performance():
 # STRATEGY SETTINGS API - Supabase-backed, real-time
 # ============================================================
 
+import json as _json
+
+SETTINGS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'settings.json')
+
+def _load_settings_file():
+    """Load settings from local JSON file, falling back to .env defaults"""
+    config = Config()
+    defaults = {
+        'trading_enabled': config._DEFAULTS.get('trading_enabled', True),
+        'fibonacci_enabled': config._DEFAULTS.get('fibonacci_enabled', True),
+        'fibonacci_base': config._DEFAULTS.get('fibonacci_base', 0.1),
+        'fibonacci_max_iterations': config._DEFAULTS.get('fibonacci_max_iterations', 8),
+        'fibonacci_symbol_bases': config._DEFAULTS.get('fibonacci_symbol_bases', {}),
+        'max_position_size': config._DEFAULTS.get('max_position_size', 10000),
+        'max_daily_loss': config._DEFAULTS.get('max_daily_loss', 999999999),
+        'max_open_positions': config._DEFAULTS.get('max_open_positions', 10),
+        'profit_protection_enabled': config._DEFAULTS.get('profit_protection_enabled', True),
+        'profit_protection_threshold': config._DEFAULTS.get('profit_protection_threshold', 0.0),
+    }
+    try:
+        if os.path.exists(SETTINGS_FILE):
+            with open(SETTINGS_FILE, 'r') as f:
+                saved = _json.load(f)
+            defaults.update(saved)
+    except Exception as e:
+        logger.error(f"Error loading settings file: {e}")
+    return defaults
+
+def _save_settings_file(settings):
+    """Save settings to local JSON file"""
+    with open(SETTINGS_FILE, 'w') as f:
+        _json.dump(settings, f, indent=2)
+
 # Settings schema: defines all available settings
 SETTINGS_SCHEMA = [
     {'key': 'trading_enabled', 'value_type': 'bool', 'label': 'Trading Enabled', 'category': 'general', 'description': 'Master kill switch for all trading'},
@@ -1419,21 +1452,9 @@ SETTINGS_SCHEMA = [
 
 @app.route('/api/settings', methods=['GET'])
 def get_settings():
-    """Get current strategy settings (reads from Supabase, falls back to .env)"""
+    """Get current strategy settings from local JSON file"""
     try:
-        config = Config()
-        settings = {
-            'trading_enabled': config.TRADING_ENABLED,
-            'fibonacci_enabled': config.FIBONACCI_ENABLED,
-            'fibonacci_base': config.FIBONACCI_BASE,
-            'fibonacci_max_iterations': config.FIBONACCI_MAX_ITERATIONS,
-            'fibonacci_symbol_bases': config.FIBONACCI_SYMBOL_BASES,
-            'max_position_size': config.MAX_POSITION_SIZE,
-            'max_open_positions': config.MAX_OPEN_POSITIONS,
-            'max_daily_loss': config.MAX_DAILY_LOSS,
-            'profit_protection_enabled': config.PROFIT_PROTECTION_ENABLED,
-            'profit_protection_threshold': config.PROFIT_PROTECTION_THRESHOLD,
-        }
+        settings = _load_settings_file()
         return jsonify({'success': True, 'settings': settings, 'schema': SETTINGS_SCHEMA})
     except Exception as e:
         logger.error(f"Error getting settings: {str(e)}")
@@ -1441,45 +1462,22 @@ def get_settings():
 
 @app.route('/api/settings', methods=['POST'])
 def update_settings():
-    """Update strategy settings — saves to Supabase for real-time sync"""
+    """Update strategy settings — saves to local JSON file, takes effect immediately"""
     try:
         data = request.json
         logger.info(f"Updating settings: {data}")
 
-        from services.supabase_client import SupabaseClient
-        supabase = SupabaseClient()
+        settings = _load_settings_file()
+        settings.update(data)
+        _save_settings_file(settings)
 
-        if not supabase.is_connected():
-            return jsonify({'success': False, 'error': 'Supabase not connected'}), 500
-
-        # Build upsert list from incoming data
-        schema_map = {s['key']: s for s in SETTINGS_SCHEMA}
-        upsert_list = []
-
-        for key, value in data.items():
-            if key in schema_map:
-                s = schema_map[key]
-                # Convert dicts/lists to JSON string
-                if s['value_type'] == 'json' and not isinstance(value, str):
-                    import json
-                    value = json.dumps(value)
-                upsert_list.append({
-                    'key': key,
-                    'value': str(value),
-                    'value_type': s['value_type'],
-                    'label': s['label'],
-                    'category': s['category'],
-                    'description': s['description'],
-                })
-
-        if upsert_list:
-            supabase.bulk_upsert_settings(upsert_list)
-
-        # Clear config cache so next read picks up new values
+        # Clear config caches so all services pick up new values immediately
         order_manager.config._cache = {}
+        order_manager.config._cache_time = 0
         risk_manager.config._cache = {}
+        risk_manager.config._cache_time = 0
 
-        logger.info(f"Settings updated in Supabase: {list(data.keys())}")
+        logger.info(f"Settings saved to file: {list(data.keys())}")
 
         return jsonify({
             'success': True,

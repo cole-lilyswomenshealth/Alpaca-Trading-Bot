@@ -159,24 +159,29 @@ class OrderManager:
                     
                     if position:
                         unrealized_pl = float(position.unrealized_pl)
-                        unrealized_plpc = float(position.unrealized_plpc)
+                        unrealized_plpc = float(position.unrealized_plpc) * 100  # Convert to percentage
                         
                         print(f"PROFIT CHECK: {symbol} - Unrealized P&L: ${unrealized_pl:.2f} ({unrealized_plpc:.2f}%)")
                         
-                        # If position is NOT profitable, reject the sell
-                        if unrealized_pl <= 0:
-                            return {
-                                'success': False,
-                                'error': 'PROFIT PROTECTION: Position not in profit',
-                                'details': {
-                                    'symbol': symbol,
-                                    'unrealized_pl': unrealized_pl,
-                                    'unrealized_plpc': unrealized_plpc,
-                                    'message': 'Sell order blocked - waiting for profit'
+                        # Check if profit protection is enabled
+                        if self.config.PROFIT_PROTECTION_ENABLED:
+                            threshold = self.config.PROFIT_PROTECTION_THRESHOLD  # Minimum % profit required
+                            
+                            # If position is NOT profitable enough, reject the sell
+                            if unrealized_plpc <= threshold:
+                                return {
+                                    'success': False,
+                                    'error': f'PROFIT PROTECTION: Position not at {threshold}% profit (currently {unrealized_plpc:.2f}%)',
+                                    'details': {
+                                        'symbol': symbol,
+                                        'unrealized_pl': unrealized_pl,
+                                        'unrealized_plpc': unrealized_plpc,
+                                        'threshold': threshold,
+                                        'message': f'Sell order blocked - need {threshold}% profit, currently at {unrealized_plpc:.2f}%'
+                                    }
                                 }
-                            }
                         
-                        # Position is profitable - sell entire position
+                        # Position is profitable enough - sell entire position
                         print(f"PROFIT CHECK PASSED: Selling entire position of {position.qty} shares")
                         qty = abs(float(position.qty))  # Sell entire position
                         
