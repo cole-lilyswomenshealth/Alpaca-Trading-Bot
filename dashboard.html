@@ -53,12 +53,15 @@
         @keyframes fadeUp{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
         .scroll-table{max-height:320px;overflow-y:auto}.hint{font-size:11px;color:var(--muted);margin-top:4px}
         /* Charts */
-        .chart-container{position:relative;height:180px;padding:10px 0}
+        .chart-wrap{position:relative}
+        .chart-tooltip{position:absolute;pointer-events:none;display:none;background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:11px;z-index:5;white-space:nowrap}
+        .chart-tooltip .tt-val{font-weight:700;color:var(--text-bright)}.chart-tooltip .tt-date{color:var(--muted)}
+        .chart-crosshair{position:absolute;top:0;width:1px;background:rgba(59,130,246,.4);pointer-events:none;display:none}
         .bar-chart{display:flex;align-items:flex-end;justify-content:space-around;height:140px;padding:0 10px}
-        .bar-col{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}
-        .bar{width:32px;border-radius:4px 4px 0 0;transition:height .4s;min-height:2px}
+        .bar-col{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;max-width:80px}
+        .bar{width:36px;border-radius:4px 4px 0 0;transition:height .4s;min-height:4px}
         .bar-label{font-size:10px;color:var(--muted)}.bar-val{font-size:10px;font-weight:600}
-        .line-chart{width:100%;height:160px}
+        .line-chart{width:100%;height:160px;cursor:crosshair}
         @media(max-width:768px){.sidebar{width:48px}.nav-item span{display:none}.g2,.g3,.g4,.g-main{grid-template-columns:1fr}.row{flex-direction:column}.topbar{padding:0 10px}}
     </style>
 </head>
@@ -115,7 +118,11 @@
         <div class="grid g2" style="margin-bottom:12px">
             <div class="panel">
                 <div class="panel-header"><span class="panel-title">Portfolio Value (1 Month)</span></div>
-                <div class="panel-body"><canvas id="lineChart" class="line-chart"></canvas></div>
+                <div class="panel-body chart-wrap">
+                    <canvas id="lineChart" class="line-chart"></canvas>
+                    <div class="chart-crosshair" id="crosshair"></div>
+                    <div class="chart-tooltip" id="chartTip"><span class="tt-val" id="ttVal"></span><br><span class="tt-date" id="ttDate"></span></div>
+                </div>
             </div>
             <div class="panel">
                 <div class="panel-header"><span class="panel-title">Daily P&L This Week</span></div>
@@ -217,6 +224,7 @@ async function loadAccount(){
 }
 
 // ── Charts ──
+let chartData={pts:[],eq:[],ts:[]};
 async function loadCharts(){
     try{
         const d=await api('/api/portfolio-history?period=1M&timeframe=1D');
@@ -234,21 +242,21 @@ async function loadCharts(){
             canvas.width=rect.width*dpr;canvas.height=160*dpr;
             canvas.style.width=rect.width+'px';canvas.style.height='160px';
             ctx.scale(dpr,dpr);
-            const w=rect.width;const ht=160;const pad=40;const padR=10;
+            const w=rect.width;const ht=160;const pad=44;const padR=10;const padTop=10;const padBot=18;
             const minV=Math.min(...eq)*0.999;const maxV=Math.max(...eq)*1.001;const range=maxV-minV||1;
             ctx.clearRect(0,0,w,ht);
             // Grid
             ctx.strokeStyle='rgba(37,42,58,.5)';ctx.lineWidth=0.5;
-            for(let i=0;i<=3;i++){const y=pad-10+(ht-pad)*i/3;ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(w-padR,y);ctx.stroke();
+            for(let i=0;i<=3;i++){const y=padTop+(ht-padTop-padBot)*i/3;ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(w-padR,y);ctx.stroke();
                 ctx.fillStyle='#5c6478';ctx.font='10px Inter,sans-serif';
                 const label=maxV-range*i/3;ctx.fillText('$'+label.toFixed(0),0,y+3)}
             // Line + fill
             const gradient=ctx.createLinearGradient(0,0,0,ht);gradient.addColorStop(0,'rgba(59,130,246,.2)');gradient.addColorStop(1,'rgba(59,130,246,0)');
             ctx.beginPath();
             const pts=[];
-            eq.forEach((v,i)=>{const x=pad+(w-pad-padR)*i/(eq.length-1);const y=(pad-10)+(ht-pad)*(1-(v-minV)/range);pts.push({x,y});if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)});
+            eq.forEach((v,i)=>{const x=pad+(w-pad-padR)*i/(eq.length-1);const y=padTop+(ht-padTop-padBot)*(1-(v-minV)/range);pts.push({x,y});if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)});
             ctx.strokeStyle='#3b82f6';ctx.lineWidth=2;ctx.stroke();
-            ctx.lineTo(pts[pts.length-1].x,ht);ctx.lineTo(pts[0].x,ht);ctx.closePath();ctx.fillStyle=gradient;ctx.fill();
+            ctx.lineTo(pts[pts.length-1].x,ht-padBot);ctx.lineTo(pts[0].x,ht-padBot);ctx.closePath();ctx.fillStyle=gradient;ctx.fill();
             // Dot on last point
             const last=pts[pts.length-1];ctx.beginPath();ctx.arc(last.x,last.y,4,0,Math.PI*2);ctx.fillStyle='#3b82f6';ctx.fill();ctx.strokeStyle='#0c0e14';ctx.lineWidth=2;ctx.stroke();
             // Date labels
@@ -258,9 +266,12 @@ async function loadCharts(){
                 const ld=new Date(ts[ts.length-1]*1000).toLocaleDateString('en-US',{month:'short',day:'numeric'});
                 ctx.fillText(fd,pad,ht-2);ctx.fillText(ld,w-ctx.measureText(ld).width-padR,ht-2);
             }
-        }else{$('lineChart').parentElement.innerHTML='<div class="empty">Not enough data for chart yet</div>'}
+            // Store for hover
+            chartData={pts,eq,ts,pad,padR,padTop,padBot,w:rect.width,ht:160,minV,maxV,range};
+        }else{$('lineChart').parentElement.querySelector('canvas').style.display='none';
+            $('lineChart').parentElement.insertAdjacentHTML('beforeend','<div class="empty">Not enough data yet</div>')}
 
-        // ── Bar chart: daily P&L this week ──
+        // ── Bar chart: daily P&L ──
         if(pl.length>0){
             const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
             const count=Math.min(pl.length,5);
@@ -270,18 +281,44 @@ async function loadCharts(){
                 weekPl.push(pl[i]||0);
                 weekLabels.push(ts[i]?dayNames[new Date(ts[i]*1000).getDay()]:'--');
             }
-            const maxBar=Math.max(...weekPl.map(Math.abs),0.01);
+            // Adaptive: each bar height is proportional to its value relative to the max
+            // But minimum bar height is 20% so small values are still visible
+            const maxBar=Math.max(...weekPl.map(Math.abs));
             let bh='';
             weekPl.forEach((v,i)=>{
-                const pctH=Math.min(Math.abs(v)/maxBar*100,100);
+                let barPct;
+                if(maxBar===0){barPct=10}
+                else{barPct=Math.abs(v)/maxBar*100;barPct=Math.max(barPct,15)} // min 15% height
                 const color=v>=0?'var(--green)':'var(--red)';
-                const sign=v>=0?'+':'';
-                bh+=`<div class="bar-col"><div class="bar-val" style="color:${color}">${sign}$${Math.abs(v).toFixed(2)}</div><div class="bar" style="height:${Math.max(pctH,5)}%;background:${color}"></div><div class="bar-label">${weekLabels[i]}</div></div>`;
+                const sign=v>=0?'+':'-';
+                bh+=`<div class="bar-col"><div class="bar-val" style="color:${color}">${sign}$${Math.abs(v).toFixed(2)}</div><div class="bar" style="height:${barPct}%;background:${color}"></div><div class="bar-label">${weekLabels[i]}</div></div>`;
             });
             $('barChart').innerHTML=bh;
         }else{$('barChart').innerHTML='<div class="empty">No P&L data yet</div>'}
     }catch(e){console.error('Chart error:',e)}
 }
+
+// ── Line chart hover ──
+$('lineChart').addEventListener('mousemove',function(e){
+    if(!chartData.pts||!chartData.pts.length)return;
+    const rect=this.getBoundingClientRect();
+    const mx=e.clientX-rect.left;
+    // Find closest point
+    let closest=0;let minDist=Infinity;
+    chartData.pts.forEach((p,i)=>{const d=Math.abs(p.x-mx);if(d<minDist){minDist=d;closest=i}});
+    const pt=chartData.pts[closest];
+    const cross=$('crosshair');const tip=$('chartTip');
+    cross.style.display='block';cross.style.left=pt.x+'px';cross.style.height=(chartData.ht-chartData.padBot)+'px';
+    $('ttVal').textContent='$'+chartData.eq[closest].toFixed(2);
+    const dt=chartData.ts[closest]?new Date(chartData.ts[closest]*1000).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}):'';
+    $('ttDate').textContent=dt;
+    tip.style.display='block';
+    let tipX=pt.x+12;if(tipX+120>chartData.w)tipX=pt.x-130;
+    tip.style.left=tipX+'px';tip.style.top=Math.max(pt.y-20,0)+'px';
+});
+$('lineChart').addEventListener('mouseleave',function(){
+    $('crosshair').style.display='none';$('chartTip').style.display='none';
+});
 
 async function loadPositions(){
     const d=await api('/api/account');if(!d.success||!d.positions||!d.positions.length){$('posTable').innerHTML='<div class="empty">No open positions</div>';return}
