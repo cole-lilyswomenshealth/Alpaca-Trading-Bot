@@ -191,15 +191,13 @@
     <!-- DATA & REPORTS -->
     <div class="content" id="pg-reports">
         <div class="panel">
-            <div class="panel-header"><span class="panel-title">Available Data</span></div>
+            <div class="panel-header"><span class="panel-title">Downloadable Data</span></div>
             <div class="panel-body no-pad">
                 <table>
                     <tr><th>Dataset</th><th>Source</th><th>Records</th><th>Actions</th></tr>
-                    <tr><td class="sym">Trade History</td><td style="color:var(--muted)">Alpaca + Supabase</td><td id="dataTradeCount">--</td><td><button class="btn btn-ghost btn-sm" onclick="previewData('trades')">Preview</button> <button class="btn btn-accent btn-sm" onclick="downloadCSV('trades')">CSV</button> <button class="btn btn-ghost btn-sm" onclick="generateReport('trades')">PDF</button></td></tr>
+                    <tr><td class="sym">Trade History</td><td style="color:var(--muted)">Alpaca</td><td id="dataTradeCount">--</td><td><button class="btn btn-ghost btn-sm" onclick="previewData('trades')">Preview</button> <button class="btn btn-accent btn-sm" onclick="downloadCSV('trades')">CSV</button> <button class="btn btn-ghost btn-sm" onclick="generateReport('trades')">PDF</button></td></tr>
                     <tr><td class="sym">Webhook Log</td><td style="color:var(--muted)">Supabase</td><td id="dataWebhookCount">--</td><td><button class="btn btn-ghost btn-sm" onclick="previewData('webhooks')">Preview</button> <button class="btn btn-accent btn-sm" onclick="downloadCSV('webhooks')">CSV</button> <button class="btn btn-ghost btn-sm" onclick="generateReport('webhooks')">PDF</button></td></tr>
-                    <tr><td class="sym">Closed Positions</td><td style="color:var(--muted)">Alpaca + Supabase</td><td id="dataClosedCount">--</td><td><button class="btn btn-ghost btn-sm" onclick="previewData('closed')">Preview</button> <button class="btn btn-accent btn-sm" onclick="downloadCSV('closed')">CSV</button> <button class="btn btn-ghost btn-sm" onclick="generateReport('pnl')">PDF</button></td></tr>
-                    <tr><td class="sym">Open Positions</td><td style="color:var(--muted)">Alpaca</td><td id="dataOpenCount">--</td><td><button class="btn btn-ghost btn-sm" onclick="previewData('positions')">Preview</button> <button class="btn btn-accent btn-sm" onclick="downloadCSV('positions')">CSV</button></td></tr>
-                    <tr><td class="sym">Order History</td><td style="color:var(--muted)">Alpaca</td><td id="dataOrderCount">--</td><td><button class="btn btn-ghost btn-sm" onclick="previewData('orders')">Preview</button> <button class="btn btn-accent btn-sm" onclick="downloadCSV('orders')">CSV</button></td></tr>
+                    <tr><td class="sym">P&L Statement</td><td style="color:var(--muted)">Alpaca</td><td id="dataPnlCount">--</td><td><button class="btn btn-ghost btn-sm" onclick="previewData('pnl')">Preview</button> <button class="btn btn-accent btn-sm" onclick="downloadCSV('pnl')">CSV</button> <button class="btn btn-accent btn-sm" onclick="generatePnlReport()">PDF Report</button></td></tr>
                 </table>
             </div>
         </div>
@@ -435,12 +433,10 @@ async function saveSettings(){
 
 // ── Data & Reports ──
 async function loadDataCounts(){
-    const [orders,webhooks,closed,account]=await Promise.all([api('/api/orders?limit=500'),api('/api/webhooks'),api('/api/closed-positions?limit=500&days=365'),api('/api/account')]);
+    const [orders,webhooks,closed]=await Promise.all([api('/api/orders?limit=500'),api('/api/webhooks'),api('/api/closed-positions?limit=500&days=365')]);
     $('dataTradeCount').textContent=(orders.orders||[]).filter(o=>o.status==='filled').length;
-    $('dataWebhookCount').textContent=(webhooks.webhooks||[]).length;
-    $('dataClosedCount').textContent=(closed.positions||[]).filter(p=>p.symbol!=='TEST').length;
-    $('dataOpenCount').textContent=(account.positions||[]).length;
-    $('dataOrderCount').textContent=(orders.orders||[]).length;
+    $('dataWebhookCount').textContent=(webhooks.webhooks||[]).filter(w=>w.status==='success').length;
+    $('dataPnlCount').textContent=(closed.positions||[]).filter(p=>p.symbol!=='TEST').length;
 }
 
 async function previewData(type){
@@ -466,10 +462,12 @@ async function getDataset(type){
         title='Webhook Log';headers=['Date','Symbol','Action','Status','Error'];
         const d=await api('/api/webhooks');
         (d.webhooks||[]).forEach(w=>{rows.push([w.timestamp?new Date(w.timestamp).toLocaleString():'',w.symbol||'',w.action||'',w.status||'',w.error||''])});
-    }else if(type==='closed'){
-        title='Closed Positions';headers=['Symbol','Qty','Entry','Exit','P&L','P&L %','Closed'];
+    }else if(type==='pnl'){
+        title='Profit & Loss Summary';headers=['Symbol','Qty','Entry Price','Exit Price','Gross P&L','P&L %','Capital Deployed','Date Opened','Date Closed'];
         const d=await api('/api/closed-positions?limit=500&days=365');
-        (d.positions||[]).filter(p=>p.symbol!=='TEST').forEach(p=>{rows.push([p.symbol,p.qty,'$'+Number(p.open_price).toFixed(2),'$'+Number(p.close_price).toFixed(2),(p.pnl>=0?'+':'')+('$'+Number(p.pnl).toFixed(2)),Number(p.pnl_pct).toFixed(2)+'%',p.closed_at?new Date(p.closed_at).toLocaleString():''])});
+        (d.positions||[]).filter(p=>p.symbol!=='TEST').forEach(p=>{
+            rows.push([p.symbol,p.qty,'$'+Number(p.open_price).toFixed(2),'$'+Number(p.close_price).toFixed(2),(p.pnl>=0?'+':'')+('$'+Number(p.pnl).toFixed(2)),Number(p.pnl_pct).toFixed(2)+'%','$'+(p.open_price*p.qty).toFixed(2),p.opened_at?new Date(p.opened_at).toLocaleString():'',p.closed_at?new Date(p.closed_at).toLocaleString():'']);
+        });
     }else if(type==='positions'){
         title='Open Positions';headers=['Symbol','Side','Qty','Avg Entry','Current','Mkt Value','P&L','P&L %'];
         const d=await api('/api/account');
@@ -496,10 +494,152 @@ function downloadCSV(type){
 }
 
 async function generateReport(type){
-    const {headers,rows,title}=await getDataset(type==='pnl'?'closed':type);
+    const {headers,rows,title}=await getDataset(type);
     const now=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
-    const printHtml=`<!DOCTYPE html><html><head><title>${title} - Maroon Investments</title><style>body{font-family:Arial,sans-serif;padding:40px;color:#222}h1{font-size:22px;margin-bottom:4px}h2{font-size:14px;color:#666;margin-bottom:20px;font-weight:normal}table{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px}th{text-align:left;padding:8px;background:#f5f5f5;border-bottom:2px solid #ddd;font-size:11px;text-transform:uppercase}td{padding:8px;border-bottom:1px solid #eee}.footer{margin-top:30px;font-size:11px;color:#999;border-top:1px solid #eee;padding-top:10px}</style></head><body><h1>Maroon Investments</h1><h2>${title} — ${now}</h2><table><thead><tr>${headers.map(h=>'<th>'+h+'</th>').join('')}</tr></thead><tbody>${rows.length?rows.map(r=>'<tr>'+r.map(c=>'<td>'+c+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="'+headers.length+'">No data</td></tr>'}</tbody></table><div class="footer">${rows.length} records • ${now}</div></body></html>`;
-    const win=window.open('','_blank');win.document.write(printHtml);win.document.close();setTimeout(()=>win.print(),500);
+    const html=`<!DOCTYPE html><html><head><title>${title} - Maroon Investments</title><style>body{font-family:'Helvetica Neue',Arial,sans-serif;padding:48px;color:#1a1a1a;max-width:900px;margin:0 auto;font-size:13px}h1{font-size:24px;font-weight:700;margin:0}h2{font-size:13px;color:#666;margin:4px 0 0;font-weight:normal}.hl{border-bottom:3px solid #800020;margin:16px 0 24px;padding-bottom:12px}table{width:100%;border-collapse:collapse}th{text-align:left;padding:8px 10px;background:#f8f8f8;border-bottom:2px solid #ddd;font-size:11px;text-transform:uppercase;color:#666}td{padding:8px 10px;border-bottom:1px solid #eee}.ft{margin-top:32px;padding-top:12px;border-top:2px solid #e5e5e5;font-size:11px;color:#999}@media print{body{padding:24px}}</style></head><body><div class="hl"><h1>Maroon Investments</h1><h2>${title} — ${now}</h2></div><table><tr>${headers.map(h=>'<th>'+h+'</th>').join('')}</tr>${rows.map(r=>'<tr>'+r.map(c=>'<td>'+c+'</td>').join('')+'</tr>').join('')||'<tr><td colspan="'+headers.length+'">No data</td></tr>'}</table><div class="ft">${rows.length} records • ${now}</div></body></html>`;
+    const win=window.open('','_blank');win.document.write(html);win.document.close();setTimeout(()=>win.print(),500);
+}
+
+async function generatePnlReport(){
+    const [account,closed,orders,history]=await Promise.all([
+        api('/api/account'),
+        api('/api/closed-positions?limit=1000&days=365'),
+        api('/api/orders?limit=1000'),
+        api('/api/portfolio-history?period=1M&timeframe=1D')
+    ]);
+    const a=account.account||{};
+    const pos=(closed.positions||[]).filter(p=>p.symbol!=='TEST');
+    const filled=(orders.orders||[]).filter(o=>o.status==='filled');
+    const buys=filled.filter(o=>o.side==='buy');
+    const sells=filled.filter(o=>o.side==='sell');
+    const now=new Date();
+    const reportDate=now.toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+
+    // Calculate metrics
+    let totalRealizedPnl=0,totalCapitalDeployed=0,winCount=0,lossCount=0;
+    const bySymbol={};
+    pos.forEach(p=>{
+        totalRealizedPnl+=p.pnl;
+        totalCapitalDeployed+=p.open_price*p.qty;
+        if(p.pnl>=0)winCount++;else lossCount++;
+        if(!bySymbol[p.symbol])bySymbol[p.symbol]={pnl:0,trades:0,capital:0};
+        bySymbol[p.symbol].pnl+=p.pnl;
+        bySymbol[p.symbol].trades++;
+        bySymbol[p.symbol].capital+=p.open_price*p.qty;
+    });
+    const winRate=pos.length>0?((winCount/pos.length)*100).toFixed(1):'0.0';
+    const roc=totalCapitalDeployed>0?((totalRealizedPnl/totalCapitalDeployed)*100).toFixed(2):'0.00';
+    const unrealizedPnl=(account.positions||[]).reduce((s,p)=>s+p.unrealized_pl,0);
+    const totalPnl=totalRealizedPnl+unrealizedPnl;
+    const nav=a.equity||0;
+    const startingCapital=a.last_equity||nav;
+    const dayPnl=nav-startingCapital;
+
+    // Portfolio history for period returns
+    const eq=history.history?.equity||[];
+    const periodStart=eq.length>0?eq[0]:nav;
+    const periodReturn=periodStart>0?((nav-periodStart)/periodStart*100).toFixed(2):'0.00';
+
+    // Symbol breakdown rows
+    let symbolRows='';
+    Object.entries(bySymbol).sort((a,b)=>b[1].pnl-a[1].pnl).forEach(([sym,d])=>{
+        const symRoc=d.capital>0?((d.pnl/d.capital)*100).toFixed(2):'0.00';
+        symbolRows+=`<tr><td>${sym}</td><td style="text-align:right">${d.trades}</td><td style="text-align:right">$${d.capital.toFixed(2)}</td><td style="text-align:right;color:${d.pnl>=0?'#16a34a':'#dc2626'}">${d.pnl>=0?'+':''}$${d.pnl.toFixed(2)}</td><td style="text-align:right">${symRoc}%</td></tr>`;
+    });
+
+    // Trade detail rows
+    let tradeRows='';
+    pos.forEach(p=>{
+        tradeRows+=`<tr><td>${p.closed_at?new Date(p.closed_at).toLocaleDateString():''}</td><td>${p.symbol}</td><td style="text-align:right">${p.qty}</td><td style="text-align:right">$${Number(p.open_price).toFixed(2)}</td><td style="text-align:right">$${Number(p.close_price).toFixed(2)}</td><td style="text-align:right">$${(p.open_price*p.qty).toFixed(2)}</td><td style="text-align:right;color:${p.pnl>=0?'#16a34a':'#dc2626'}">${p.pnl>=0?'+':''}$${p.pnl.toFixed(2)}</td><td style="text-align:right">${Number(p.pnl_pct).toFixed(2)}%</td></tr>`;
+    });
+
+    const html=`<!DOCTYPE html><html><head><title>P&L Statement - Maroon Investments</title>
+<style>
+body{font-family:'Helvetica Neue',Arial,sans-serif;padding:48px;color:#1a1a1a;max-width:900px;margin:0 auto;font-size:13px;line-height:1.5}
+h1{font-size:24px;font-weight:700;margin:0;color:#1a1a1a}
+.subtitle{font-size:13px;color:#666;margin:4px 0 0}
+.header-line{border-bottom:3px solid #800020;margin:16px 0 24px;padding-bottom:12px}
+.section{margin-bottom:28px}
+.section-title{font-size:15px;font-weight:700;color:#800020;border-bottom:1px solid #e5e5e5;padding-bottom:6px;margin-bottom:12px}
+table{width:100%;border-collapse:collapse;margin-bottom:8px}
+th{text-align:left;padding:8px 10px;background:#f8f8f8;border-bottom:2px solid #ddd;font-size:11px;text-transform:uppercase;color:#666;font-weight:600}
+td{padding:8px 10px;border-bottom:1px solid #eee}
+.summary-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:24px}
+.summary-box{border:1px solid #e5e5e5;border-radius:6px;padding:14px;text-align:center}
+.summary-box .label{font-size:10px;text-transform:uppercase;color:#888;letter-spacing:.5px;margin-bottom:4px}
+.summary-box .value{font-size:20px;font-weight:700}
+.pos{color:#16a34a}.neg{color:#dc2626}
+.footer{margin-top:32px;padding-top:12px;border-top:2px solid #e5e5e5;font-size:11px;color:#999}
+.disclaimer{font-size:10px;color:#aaa;margin-top:16px;line-height:1.4}
+@media print{body{padding:24px}@page{margin:0.75in}}
+</style></head><body>
+<div class="header-line">
+<h1>Maroon Investments</h1>
+<div class="subtitle">Statement of Operations &amp; Performance Report</div>
+<div class="subtitle">Report Date: ${reportDate}</div>
+</div>
+
+<div class="section">
+<div class="section-title">Fund Summary</div>
+<div class="summary-grid">
+<div class="summary-box"><div class="label">Net Asset Value (NAV)</div><div class="value">$${Number(nav).toLocaleString('en-US',{minimumFractionDigits:2})}</div></div>
+<div class="summary-box"><div class="label">Total P&L (Realized + Unrealized)</div><div class="value ${totalPnl>=0?'pos':'neg'}">${totalPnl>=0?'+':''}$${totalPnl.toFixed(2)}</div></div>
+<div class="summary-box"><div class="label">Period Return (1M)</div><div class="value ${Number(periodReturn)>=0?'pos':'neg'}">${Number(periodReturn)>=0?'+':''}${periodReturn}%</div></div>
+</div>
+</div>
+
+<div class="section">
+<div class="section-title">Statement of Operations</div>
+<table>
+<tr><td style="font-weight:600">Realized Gains / (Losses)</td><td style="text-align:right;font-weight:600" class="${totalRealizedPnl>=0?'pos':'neg'}">${totalRealizedPnl>=0?'+':''}$${totalRealizedPnl.toFixed(2)}</td></tr>
+<tr><td style="font-weight:600">Unrealized Appreciation / (Depreciation)</td><td style="text-align:right;font-weight:600" class="${unrealizedPnl>=0?'pos':'neg'}">${unrealizedPnl>=0?'+':''}$${unrealizedPnl.toFixed(2)}</td></tr>
+<tr style="border-top:2px solid #333"><td style="font-weight:700">Net Increase / (Decrease) in Net Assets</td><td style="text-align:right;font-weight:700" class="${totalPnl>=0?'pos':'neg'}">${totalPnl>=0?'+':''}$${totalPnl.toFixed(2)}</td></tr>
+</table>
+</div>
+
+<div class="section">
+<div class="section-title">Performance Metrics</div>
+<table>
+<tr><td>Total Capital Deployed</td><td style="text-align:right">$${totalCapitalDeployed.toFixed(2)}</td></tr>
+<tr><td>Return on Capital</td><td style="text-align:right">${roc}%</td></tr>
+<tr><td>Total Closed Trades</td><td style="text-align:right">${pos.length}</td></tr>
+<tr><td>Winning Trades</td><td style="text-align:right">${winCount}</td></tr>
+<tr><td>Losing Trades</td><td style="text-align:right">${lossCount}</td></tr>
+<tr><td>Win Rate</td><td style="text-align:right">${winRate}%</td></tr>
+<tr><td>Total Buy Orders Executed</td><td style="text-align:right">${buys.length}</td></tr>
+<tr><td>Total Sell Orders Executed</td><td style="text-align:right">${sells.length}</td></tr>
+<tr><td>Cash Balance</td><td style="text-align:right">$${Number(a.cash||0).toFixed(2)}</td></tr>
+<tr><td>Buying Power</td><td style="text-align:right">$${Number(a.buying_power||0).toFixed(2)}</td></tr>
+</table>
+</div>
+
+<div class="section">
+<div class="section-title">Performance by Symbol</div>
+<table>
+<tr><th>Symbol</th><th style="text-align:right">Trades</th><th style="text-align:right">Capital</th><th style="text-align:right">P&L</th><th style="text-align:right">Return</th></tr>
+${symbolRows||'<tr><td colspan="5" style="text-align:center;color:#999">No closed trades</td></tr>'}
+</table>
+</div>
+
+<div class="section">
+<div class="section-title">Schedule of Closed Trades</div>
+<table>
+<tr><th>Date</th><th>Symbol</th><th style="text-align:right">Qty</th><th style="text-align:right">Entry</th><th style="text-align:right">Exit</th><th style="text-align:right">Capital</th><th style="text-align:right">P&L</th><th style="text-align:right">Return</th></tr>
+${tradeRows||'<tr><td colspan="8" style="text-align:center;color:#999">No closed trades</td></tr>'}
+</table>
+</div>
+
+<div class="footer">
+<strong>Maroon Investments</strong> — Confidential<br>
+Generated ${reportDate} • ${pos.length} closed trades • NAV $${Number(nav).toLocaleString('en-US',{minimumFractionDigits:2})}
+</div>
+<div class="disclaimer">
+This document is provided for informational purposes only and does not constitute an offer to sell or a solicitation of an offer to buy any securities. Past performance is not indicative of future results. All investments involve risk, including the possible loss of principal. This report was generated automatically and has not been audited.
+</div>
+</body></html>`;
+
+    const win=window.open('','_blank');win.document.write(html);win.document.close();setTimeout(()=>win.print(),500);
+    toast('P&L Statement generated');
 }
 
 // Init
