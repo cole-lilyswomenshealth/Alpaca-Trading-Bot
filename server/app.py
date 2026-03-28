@@ -1672,32 +1672,6 @@ def dashboard():
     """Serve main dashboard"""
     return send_from_directory(ROOT_DIR, 'dashboard.html')
 
-@app.route('/daily-summary.html')
-def daily_summary():
-    """Serve daily summary dashboard"""
-    return send_from_directory(ROOT_DIR, 'daily-summary.html')
-
-@app.route('/portfolio.html')
-def portfolio():
-    """Serve portfolio dashboard"""
-    return send_from_directory(ROOT_DIR, 'portfolio.html')
-
-@app.route('/rsi-scanner.html')
-def rsi_scanner():
-    """Serve RSI scanner dashboard"""
-    return send_from_directory(ROOT_DIR, 'rsi-scanner.html')
-
-@app.route('/daily-performance.html')
-def daily_performance():
-    """Serve daily performance dashboard"""
-    return send_from_directory(ROOT_DIR, 'daily-performance.html')
-
-@app.route('/settings')
-@app.route('/settings-dashboard.html')
-def settings_dashboard():
-    """Serve settings dashboard"""
-    return send_from_directory(ROOT_DIR, 'settings-dashboard.html')
-
 # =====================================================
 # START SERVER
 
