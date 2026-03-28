@@ -307,7 +307,7 @@ async function loadCharts(){
             const weekPl=[];const weekLabels=[];
             for(let i=startIdx;i<pl.length;i++){
                 weekPl.push(pl[i]||0);
-                weekLabels.push(ts[i]?dayNames[new Date(ts[i]*1000).getDay()]:'--');
+                weekLabels.push(ts[i]?new Date(ts[i]*1000).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'--');
             }
             // Adaptive: each bar height is proportional to its value relative to the max
             // But minimum bar height is 20% so small values are still visible

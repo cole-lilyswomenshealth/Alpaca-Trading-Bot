@@ -457,13 +457,15 @@ def get_closed_positions():
                 
                 logger.info(f"Retrieved {len(positions)} closed positions from Supabase (source: {source})")
                 
-                return jsonify({
-                    'success': True,
-                    'positions': positions,
-                    'total': len(positions),
-                    'source': 'supabase',
-                    'filter': source
-                })
+                if positions:
+                    return jsonify({
+                        'success': True,
+                        'positions': positions,
+                        'total': len(positions),
+                        'source': 'supabase',
+                        'filter': source
+                    })
+                # If Supabase is empty, fall through to Alpaca
             except Exception as e:
                 logger.error(f"Error getting positions from Supabase: {e}")
                 # Fall through to Alpaca method
