@@ -516,19 +516,25 @@ async function generatePnlReport(){
     const reportDate=now.toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
 
     // Calculate metrics
-    let totalRealizedPnl=0,totalCapitalDeployed=0,winCount=0,lossCount=0;
+    let totalRealizedPnl=0,totalCapitalClosed=0,winCount=0,lossCount=0;
     const bySymbol={};
     pos.forEach(p=>{
         totalRealizedPnl+=p.pnl;
-        totalCapitalDeployed+=p.open_price*p.qty;
+        totalCapitalClosed+=p.open_price*p.qty;
         if(p.pnl>=0)winCount++;else lossCount++;
         if(!bySymbol[p.symbol])bySymbol[p.symbol]={pnl:0,trades:0,capital:0};
         bySymbol[p.symbol].pnl+=p.pnl;
         bySymbol[p.symbol].trades++;
         bySymbol[p.symbol].capital+=p.open_price*p.qty;
     });
+
+    // Total capital deployed = sum of all buy orders ever
+    let totalCapitalDeployed=0;
+    buys.forEach(o=>{if(o.filled_avg_price&&o.filled_qty)totalCapitalDeployed+=o.filled_avg_price*o.filled_qty});
+
     const winRate=pos.length>0?((winCount/pos.length)*100).toFixed(1):'0.0';
-    const roc=totalCapitalDeployed>0?((totalRealizedPnl/totalCapitalDeployed)*100).toFixed(2):'0.00';
+    const rocClosed=totalCapitalClosed>0?((totalRealizedPnl/totalCapitalClosed)*100).toFixed(2):'0.00';
+    const rocTotal=totalCapitalDeployed>0?((totalRealizedPnl/totalCapitalDeployed)*100).toFixed(2):'0.00';
     const unrealizedPnl=(account.positions||[]).reduce((s,p)=>s+p.unrealized_pl,0);
     const totalPnl=totalRealizedPnl+unrealizedPnl;
     const nav=a.equity||0;
@@ -598,18 +604,27 @@ td{padding:8px 10px;border-bottom:1px solid #eee}
 </div>
 
 <div class="section">
-<div class="section-title">Performance Metrics</div>
+<div class="section-title">Overall Performance</div>
 <table>
-<tr><td>Total Capital Deployed</td><td style="text-align:right">$${totalCapitalDeployed.toFixed(2)}</td></tr>
-<tr><td>Return on Capital</td><td style="text-align:right">${roc}%</td></tr>
+<tr><td>Total Capital Deployed (All Buys)</td><td style="text-align:right">$${totalCapitalDeployed.toFixed(2)}</td></tr>
+<tr><td>Total Buy Orders Executed</td><td style="text-align:right">${buys.length}</td></tr>
+<tr><td>Total Sell Orders Executed</td><td style="text-align:right">${sells.length}</td></tr>
+<tr><td>Realized P&L vs Total Capital</td><td style="text-align:right">${rocTotal}%</td></tr>
+<tr><td>Cash Balance</td><td style="text-align:right">$${Number(a.cash||0).toFixed(2)}</td></tr>
+<tr><td>Buying Power</td><td style="text-align:right">$${Number(a.buying_power||0).toFixed(2)}</td></tr>
+</table>
+</div>
+
+<div class="section">
+<div class="section-title">Closed Trade Performance</div>
+<table>
+<tr><td>Capital Deployed (Closed Trades Only)</td><td style="text-align:right">$${totalCapitalClosed.toFixed(2)}</td></tr>
+<tr><td>Realized P&L</td><td style="text-align:right" class="${totalRealizedPnl>=0?'pos':'neg'}">${totalRealizedPnl>=0?'+':''}$${totalRealizedPnl.toFixed(2)}</td></tr>
+<tr><td>Return on Closed Capital</td><td style="text-align:right">${rocClosed}%</td></tr>
 <tr><td>Total Closed Trades</td><td style="text-align:right">${pos.length}</td></tr>
 <tr><td>Winning Trades</td><td style="text-align:right">${winCount}</td></tr>
 <tr><td>Losing Trades</td><td style="text-align:right">${lossCount}</td></tr>
 <tr><td>Win Rate</td><td style="text-align:right">${winRate}%</td></tr>
-<tr><td>Total Buy Orders Executed</td><td style="text-align:right">${buys.length}</td></tr>
-<tr><td>Total Sell Orders Executed</td><td style="text-align:right">${sells.length}</td></tr>
-<tr><td>Cash Balance</td><td style="text-align:right">$${Number(a.cash||0).toFixed(2)}</td></tr>
-<tr><td>Buying Power</td><td style="text-align:right">$${Number(a.buying_power||0).toFixed(2)}</td></tr>
 </table>
 </div>
 
