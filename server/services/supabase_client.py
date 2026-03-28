@@ -104,22 +104,22 @@ class SupabaseClient:
             return None
     
     # Trade History
-    def save_trade(self, symbol, side, quantity, price, order_id, position_id=None, source='manual'):
-        """Save a trade"""
+    def save_trade(self, symbol, side, quantity, price, order_id, position_id=None, source='manual', fibonacci_position=None):
+        """Save a trade to the trades table"""
         try:
             data = {
                 'symbol': symbol,
                 'side': side,
                 'quantity': quantity,
                 'price': price,
-                'order_id': str(order_id),  # Convert UUID to string
-                'position_id': str(position_id) if position_id else None,
-                'source': source,  # Track if webhook or manual
+                'order_id': str(order_id),
+                'source': source,
+                'fibonacci_position': fibonacci_position,
                 'executed_at': datetime.now().isoformat()
             }
             
             response = self.client.from_('trades').insert(data).execute()
-            logger.info(f"Trade saved: {symbol} {side} {quantity} (source: {source})")
+            logger.info(f"Trade saved: {symbol} {side} {quantity} @ {price} (source: {source})")
             return response.data[0] if response.data else None
         except Exception as e:
             logger.error(f"Error saving trade: {e}")
@@ -212,6 +212,75 @@ class SupabaseClient:
             return response.data
         except Exception as e:
             logger.error(f"Error getting performance history: {e}")
+            return []
+
+    # =====================================================
+    # WEBHOOK LOG - Every webhook received
+    # =====================================================
+
+    def log_webhook(self, payload, symbol, action, quantity, status, response=None, error_message=None, source_ip=None):
+        """Log every webhook received by the server"""
+        try:
+            import json
+            data = {
+                'payload': json.dumps(payload) if isinstance(payload, dict) else payload,
+                'symbol': symbol,
+                'action': action,
+                'quantity': quantity,
+                'status': status,
+                'response': json.dumps(response) if isinstance(response, dict) else response,
+                'error_message': error_message,
+                'source_ip': source_ip,
+                'received_at': datetime.now().isoformat()
+            }
+            response_data = self.client.from_('webhook_log').insert(data).execute()
+            return response_data.data[0] if response_data.data else None
+        except Exception as e:
+            logger.error(f"Error logging webhook: {e}")
+            return None
+
+    def get_webhook_log(self, limit=100):
+        """Get recent webhook logs"""
+        try:
+            response = self.client.from_('webhook_log').select('*').order('received_at', desc=True).limit(limit).execute()
+            return response.data
+        except Exception as e:
+            logger.error(f"Error getting webhook log: {e}")
+            return []
+
+    # =====================================================
+    # DAILY PERFORMANCE - End-of-day snapshots
+    # =====================================================
+
+    def save_daily_performance(self, date, portfolio_value, cash, buying_power, equity, day_pnl, day_pnl_pct, total_pnl, open_positions, trades_today=0):
+        """Save daily portfolio snapshot"""
+        try:
+            data = {
+                'date': date,
+                'portfolio_value': portfolio_value,
+                'cash': cash,
+                'buying_power': buying_power,
+                'equity': equity,
+                'day_pnl': day_pnl,
+                'day_pnl_pct': day_pnl_pct,
+                'total_pnl': total_pnl,
+                'open_positions': open_positions,
+                'trades_today': trades_today,
+            }
+            response = self.client.from_('daily_performance').upsert(data, on_conflict='date').execute()
+            logger.info(f"Daily performance saved for {date}")
+            return response.data[0] if response.data else None
+        except Exception as e:
+            logger.error(f"Error saving daily performance: {e}")
+            return None
+
+    def get_daily_performance_history(self, days=30):
+        """Get daily performance history"""
+        try:
+            response = self.client.from_('daily_performance').select('*').order('date', desc=True).limit(days).execute()
+            return response.data
+        except Exception as e:
+            logger.error(f"Error getting daily performance: {e}")
             return []
 
     # =====================================================
