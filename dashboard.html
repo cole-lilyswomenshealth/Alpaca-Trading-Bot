@@ -155,9 +155,9 @@
     <!-- WEBHOOKS -->
     <div class="content" id="pg-webhooks">
         <div class="grid g3" style="margin-bottom:12px">
-            <div class="panel"><div class="stat-block"><div class="val flat" id="whTotal">0</div><div class="lbl">Total Webhooks</div></div></div>
-            <div class="panel"><div class="stat-block"><div class="val up" id="whBuys">0</div><div class="lbl">Successful</div></div></div>
-            <div class="panel"><div class="stat-block"><div class="val down" id="whSells">0</div><div class="lbl">Blocked / Failed</div></div></div>
+            <div class="panel"><div class="stat-block"><div class="val flat" id="whTotal">0</div><div class="lbl">Total Trades</div></div></div>
+            <div class="panel"><div class="stat-block"><div class="val up" id="whBuys">0</div><div class="lbl">Buys</div></div></div>
+            <div class="panel"><div class="stat-block"><div class="val down" id="whSells">0</div><div class="lbl">Sells</div></div></div>
         </div>
         <div class="panel"><div class="panel-header"><span class="panel-title">Webhook Activity</span><button class="btn btn-ghost btn-sm" onclick="loadActivity()">Refresh</button></div><div class="panel-body no-pad"><div class="scroll-table" style="max-height:calc(100vh - 220px)" id="actTable"><div class="empty">Loading...</div></div></div></div>
     </div>
@@ -382,10 +382,9 @@ async function loadActivity(){
         mh+='</table>';$('overviewActivity').innerHTML=mh;
         return;
     }
-    const wh=d.webhooks;
-    const ok=wh.filter(w=>w.status==='success').length;
-    const blocked=wh.filter(w=>w.status==='blocked').length;
-    $('whTotal').textContent=wh.length;$('whBuys').textContent=ok;$('whSells').textContent=blocked;
+    const wh=d.webhooks.filter(w=>w.status==='success');
+    const ok=wh.length;
+    $('whTotal').textContent=ok;$('whBuys').textContent=wh.filter(w=>w.action==='buy').length;$('whSells').textContent=wh.filter(w=>w.action==='sell').length;
     let h='<table><tr><th>Time</th><th>Symbol</th><th>Action</th><th>Status</th><th>Details</th></tr>';
     wh.forEach(w=>{
         const t=w.timestamp?new Date(w.timestamp).toLocaleString():'--';
