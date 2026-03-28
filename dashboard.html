@@ -194,10 +194,10 @@
             <div class="panel-header"><span class="panel-title">Downloadable Data</span></div>
             <div class="panel-body no-pad">
                 <table>
-                    <tr><th>Dataset</th><th>Source</th><th>Records</th><th>Actions</th></tr>
-                    <tr><td class="sym">Trade History</td><td style="color:var(--muted)">Alpaca</td><td id="dataTradeCount">--</td><td><button class="btn btn-ghost btn-sm" onclick="previewData('trades')">Preview</button> <button class="btn btn-accent btn-sm" onclick="downloadCSV('trades')">CSV</button> <button class="btn btn-ghost btn-sm" onclick="generateReport('trades')">PDF</button></td></tr>
-                    <tr><td class="sym">Webhook Log</td><td style="color:var(--muted)">Supabase</td><td id="dataWebhookCount">--</td><td><button class="btn btn-ghost btn-sm" onclick="previewData('webhooks')">Preview</button> <button class="btn btn-accent btn-sm" onclick="downloadCSV('webhooks')">CSV</button> <button class="btn btn-ghost btn-sm" onclick="generateReport('webhooks')">PDF</button></td></tr>
-                    <tr><td class="sym">P&L Statement</td><td style="color:var(--muted)">Alpaca</td><td id="dataPnlCount">--</td><td><button class="btn btn-ghost btn-sm" onclick="previewData('pnl')">Preview</button> <button class="btn btn-accent btn-sm" onclick="downloadCSV('pnl')">CSV</button> <button class="btn btn-accent btn-sm" onclick="generatePnlReport()">PDF Report</button></td></tr>
+                    <tr><th>Dataset</th><th>Source</th><th>Actions</th></tr>
+                    <tr><td class="sym">Trade History</td><td style="color:var(--muted)">Alpaca</td><td><button class="btn btn-ghost btn-sm" onclick="previewData('trades')">Preview</button> <button class="btn btn-accent btn-sm" onclick="downloadCSV('trades')">CSV</button> <button class="btn btn-ghost btn-sm" onclick="generateReport('trades')">PDF</button></td></tr>
+                    <tr><td class="sym">Webhook Log</td><td style="color:var(--muted)">Supabase</td><td><button class="btn btn-ghost btn-sm" onclick="previewData('webhooks')">Preview</button> <button class="btn btn-accent btn-sm" onclick="downloadCSV('webhooks')">CSV</button> <button class="btn btn-ghost btn-sm" onclick="generateReport('webhooks')">PDF</button></td></tr>
+                    <tr><td class="sym">P&L Statement</td><td style="color:var(--muted)">Alpaca</td><td><button class="btn btn-ghost btn-sm" onclick="previewData('pnl')">Preview</button> <button class="btn btn-accent btn-sm" onclick="downloadCSV('pnl')">CSV</button> <button class="btn btn-accent btn-sm" onclick="generatePnlReport()">PDF Report</button></td></tr>
                 </table>
             </div>
         </div>
