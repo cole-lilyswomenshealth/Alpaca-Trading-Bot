@@ -23,10 +23,11 @@
         .status-indicator.off{background:var(--red);box-shadow:0 0 8px rgba(239,68,68,.5)}
         .status-indicator.checking{background:var(--orange);animation:pulse 1.2s infinite}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-        .topbar{height:44px;background:var(--sidebar);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0;position:relative}
-        .topbar-title{font-size:14px;font-weight:600;color:var(--text-bright)}
-        .topbar-right{margin-left:auto;display:flex;align-items:center;gap:12px;font-size:12px;color:var(--muted)}
-        .topbar-stat{display:flex;align-items:center;gap:6px}.topbar-stat .val{font-weight:600;color:var(--text-bright)}
+        .topbar{height:auto;min-height:44px;background:var(--sidebar);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:8px 16px;gap:12px;flex-shrink:0;flex-wrap:wrap}
+        .topbar-title{font-size:14px;font-weight:600;color:var(--text-bright);white-space:nowrap}
+        .topbar-brand{font-size:14px;font-weight:700;color:var(--text-bright);letter-spacing:.5px;white-space:nowrap}
+        .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:11px;color:var(--muted);flex-wrap:wrap}
+        .topbar-stat{display:flex;align-items:center;gap:4px;white-space:nowrap}.topbar-stat .val{font-weight:600;color:var(--text-bright);font-size:11px}
         .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
         .content{flex:1;overflow-y:auto;padding:16px;display:none}.content.active{display:block}
         .panel{background:var(--panel);border:1px solid var(--border);border-radius:8px;margin-bottom:12px;overflow:hidden}
@@ -64,7 +65,7 @@
         .bar{width:36px;border-radius:4px 4px 0 0;margin:0 auto;min-height:8px}
         .bar-label{font-size:10px;color:var(--muted);margin-top:4px}.bar-val{font-size:10px;font-weight:600;margin-bottom:4px}
         .line-chart{width:100%;height:160px;cursor:crosshair}
-        @media(max-width:768px){.sidebar{width:48px}.nav-item span{display:none}.g2,.g3,.g4,.g-main{grid-template-columns:1fr}.row{flex-direction:column}.topbar{padding:0 10px}}
+        @media(max-width:768px){.sidebar{width:48px}.sidebar-logo{width:30px;height:30px;font-size:11px;margin-bottom:12px}.nav-item span{display:none}.nav-item{padding:8px 0}.nav-item svg{width:18px;height:18px}.g2,.g3,.g4,.g-main{grid-template-columns:1fr}.row{flex-direction:column}.topbar{padding:6px 10px;gap:6px}.topbar-brand{display:none}.topbar-right{gap:8px}.topbar-stat{font-size:10px}.topbar-stat .val{font-size:10px}.content{padding:10px}.stat-block .val{font-size:18px}.stat-block{padding:10px}.panel-body{padding:10px}table{font-size:11px}th,td{padding:6px 8px}.bar{width:24px}}
     </style>
 </head>
 <body>
@@ -95,9 +96,9 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
             <span>Inputs</span>
         </div>
-        <div class="nav-item" onclick="go('reports',this)" title="Reports">
+        <div class="nav-item" onclick="go('reports',this)" title="Data">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-            <span>Reports</span>
+            <span>Data</span>
         </div>
     </div>
     <div class="sidebar-bottom"><div class="status-indicator checking" id="serverDot" title="Server status"></div></div>
@@ -105,7 +106,7 @@
 <div class="main">
     <div class="topbar">
         <span class="topbar-title" id="pageTitle">Portfolio</span>
-        <span style="position:absolute;left:50%;transform:translateX(-50%);font-size:15px;font-weight:700;color:var(--text-bright);letter-spacing:.5px">Maroon Investments</span>
+        <span class="topbar-brand">Maroon Investments</span>
         <div class="topbar-right">
             <div class="topbar-stat">Equity <span class="val" id="tbEquity">--</span></div>
             <div class="topbar-stat">Day P&L <span class="val" id="tbDayPl">--</span></div>
@@ -187,31 +188,24 @@
         </div>
     </div>
 
-    <!-- REPORTS -->
+    <!-- DATA & REPORTS -->
     <div class="content" id="pg-reports">
         <div class="panel">
-            <div class="panel-header"><span class="panel-title">Generate Reports</span></div>
-            <div class="panel-body">
-                <p style="color:var(--muted);font-size:13px;margin-bottom:16px">Export your trading data as a PDF for investors, records, or tax purposes.</p>
-                <div class="grid g3">
-                    <div class="panel" style="cursor:pointer;text-align:center;padding:20px" onclick="generateReport('trades')">
-                        <div style="font-size:24px;margin-bottom:8px">📋</div>
-                        <div class="t-label">Trade History</div>
-                        <div class="t-desc">All executed trades with prices, quantities, and P&L</div>
-                    </div>
-                    <div class="panel" style="cursor:pointer;text-align:center;padding:20px" onclick="generateReport('pnl')">
-                        <div style="font-size:24px;margin-bottom:8px">💰</div>
-                        <div class="t-label">P&L Statement</div>
-                        <div class="t-desc">Profit and loss summary with return on capital</div>
-                    </div>
-                    <div class="panel" style="cursor:pointer;text-align:center;padding:20px" onclick="generateReport('webhooks')">
-                        <div style="font-size:24px;margin-bottom:8px">🔗</div>
-                        <div class="t-label">Webhook Log</div>
-                        <div class="t-desc">Complete webhook history with statuses</div>
-                    </div>
-                </div>
-                <div id="reportPreview" style="margin-top:16px"></div>
+            <div class="panel-header"><span class="panel-title">Available Data</span></div>
+            <div class="panel-body no-pad">
+                <table>
+                    <tr><th>Dataset</th><th>Source</th><th>Records</th><th>Actions</th></tr>
+                    <tr><td class="sym">Trade History</td><td style="color:var(--muted)">Alpaca + Supabase</td><td id="dataTradeCount">--</td><td><button class="btn btn-ghost btn-sm" onclick="previewData('trades')">Preview</button> <button class="btn btn-accent btn-sm" onclick="downloadCSV('trades')">CSV</button> <button class="btn btn-ghost btn-sm" onclick="generateReport('trades')">PDF</button></td></tr>
+                    <tr><td class="sym">Webhook Log</td><td style="color:var(--muted)">Supabase</td><td id="dataWebhookCount">--</td><td><button class="btn btn-ghost btn-sm" onclick="previewData('webhooks')">Preview</button> <button class="btn btn-accent btn-sm" onclick="downloadCSV('webhooks')">CSV</button> <button class="btn btn-ghost btn-sm" onclick="generateReport('webhooks')">PDF</button></td></tr>
+                    <tr><td class="sym">Closed Positions</td><td style="color:var(--muted)">Alpaca + Supabase</td><td id="dataClosedCount">--</td><td><button class="btn btn-ghost btn-sm" onclick="previewData('closed')">Preview</button> <button class="btn btn-accent btn-sm" onclick="downloadCSV('closed')">CSV</button> <button class="btn btn-ghost btn-sm" onclick="generateReport('pnl')">PDF</button></td></tr>
+                    <tr><td class="sym">Open Positions</td><td style="color:var(--muted)">Alpaca</td><td id="dataOpenCount">--</td><td><button class="btn btn-ghost btn-sm" onclick="previewData('positions')">Preview</button> <button class="btn btn-accent btn-sm" onclick="downloadCSV('positions')">CSV</button></td></tr>
+                    <tr><td class="sym">Order History</td><td style="color:var(--muted)">Alpaca</td><td id="dataOrderCount">--</td><td><button class="btn btn-ghost btn-sm" onclick="previewData('orders')">Preview</button> <button class="btn btn-accent btn-sm" onclick="downloadCSV('orders')">CSV</button></td></tr>
+                </table>
             </div>
+        </div>
+        <div class="panel" id="dataPreviewPanel" style="display:none">
+            <div class="panel-header"><span class="panel-title" id="dataPreviewTitle">Preview</span><button class="btn btn-ghost btn-sm" onclick="$('dataPreviewPanel').style.display='none'">Close</button></div>
+            <div class="panel-body no-pad"><div class="scroll-table" style="max-height:400px" id="dataPreview"></div></div>
         </div>
     </div>
 </div>
@@ -229,7 +223,7 @@ function go(id,el){
     document.querySelectorAll('.content').forEach(p=>p.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(t=>t.classList.remove('active'));
     $('pg-'+id).classList.add('active');if(el)el.classList.add('active');
-    const names={portfolio:'Portfolio',positions:'Positions',orders:'Orders',webhooks:'Webhooks',closed:'Closed Trades',inputs:'Inputs',reports:'Reports'};
+    const names={portfolio:'Portfolio',positions:'Positions',orders:'Orders',webhooks:'Webhooks',closed:'Closed Trades',inputs:'Inputs',reports:'Data & Reports'};
     $('pageTitle').textContent=names[id]||id;window.location.hash=id;
 }
 
@@ -440,65 +434,80 @@ async function saveSettings(){
     if(d.success){toast('Inputs saved');$('saveStatus').textContent='Saved '+new Date().toLocaleTimeString()}else toast(d.error||'Failed','err');
 }
 
-// ── Reports ──
-async function generateReport(type){
-    $('reportPreview').innerHTML='<div class="empty">Generating report...</div>';
-    let title,headers,rows=[];
-    const now=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+// ── Data & Reports ──
+async function loadDataCounts(){
+    const [orders,webhooks,closed,account]=await Promise.all([api('/api/orders?limit=500'),api('/api/webhooks'),api('/api/closed-positions?limit=500&days=365'),api('/api/account')]);
+    $('dataTradeCount').textContent=(orders.orders||[]).filter(o=>o.status==='filled').length;
+    $('dataWebhookCount').textContent=(webhooks.webhooks||[]).length;
+    $('dataClosedCount').textContent=(closed.positions||[]).filter(p=>p.symbol!=='TEST').length;
+    $('dataOpenCount').textContent=(account.positions||[]).length;
+    $('dataOrderCount').textContent=(orders.orders||[]).length;
+}
 
+async function previewData(type){
+    $('dataPreviewPanel').style.display='block';
+    $('dataPreview').innerHTML='<div class="empty">Loading...</div>';
+    const {headers,rows,title}=await getDataset(type);
+    $('dataPreviewTitle').textContent=title+' Preview';
+    if(!rows.length){$('dataPreview').innerHTML='<div class="empty">No data</div>';return}
+    let h='<table><tr>'+headers.map(h=>'<th>'+h+'</th>').join('')+'</tr>';
+    rows.slice(0,20).forEach(r=>{h+='<tr>'+r.map(c=>'<td>'+c+'</td>').join('')+'</tr>'});
+    h+='</table>';
+    if(rows.length>20)h+=`<div style="text-align:center;padding:8px;color:var(--muted);font-size:11px">Showing 20 of ${rows.length} records</div>`;
+    $('dataPreview').innerHTML=h;
+}
+
+async function getDataset(type){
+    let headers=[],rows=[],title='';
     if(type==='trades'){
-        title='Trade History Report';
-        headers=['Date','Symbol','Side','Qty','Price','Total','Status'];
+        title='Trade History';headers=['Date','Symbol','Side','Qty','Price','Total','Status'];
         const d=await api('/api/orders?limit=500');
-        if(d.orders)(d.orders.filter(o=>o.status==='filled')).forEach(o=>{
-            rows.push([o.filled_at?new Date(o.filled_at).toLocaleDateString():'',o.symbol,o.side.toUpperCase(),o.filled_qty||o.qty,o.filled_avg_price?'$'+Number(o.filled_avg_price).toFixed(2):'',o.filled_avg_price&&o.filled_qty?'$'+(o.filled_avg_price*o.filled_qty).toFixed(2):'',o.status]);
-        });
-    }else if(type==='pnl'){
-        title='Profit & Loss Statement';
-        headers=['Symbol','Qty','Entry','Exit','P&L','P&L %','Date Closed'];
-        const d=await api('/api/closed-positions?limit=500&days=365');
-        if(d.positions)(d.positions.filter(p=>p.symbol!=='TEST')).forEach(p=>{
-            rows.push([p.symbol,p.qty,'$'+Number(p.open_price).toFixed(2),'$'+Number(p.close_price).toFixed(2),(p.pnl>=0?'+':'')+('$'+Number(p.pnl).toFixed(2)),Number(p.pnl_pct).toFixed(2)+'%',p.closed_at?new Date(p.closed_at).toLocaleDateString():'']);
-        });
+        (d.orders||[]).filter(o=>o.status==='filled').forEach(o=>{rows.push([o.filled_at?new Date(o.filled_at).toLocaleString():'',o.symbol,o.side.toUpperCase(),o.filled_qty||o.qty,o.filled_avg_price?'$'+Number(o.filled_avg_price).toFixed(2):'',o.filled_avg_price&&o.filled_qty?'$'+(o.filled_avg_price*o.filled_qty).toFixed(2):'',o.status])});
     }else if(type==='webhooks'){
-        title='Webhook Activity Log';
-        headers=['Date','Symbol','Action','Status','Details'];
+        title='Webhook Log';headers=['Date','Symbol','Action','Status','Error'];
         const d=await api('/api/webhooks');
-        if(d.webhooks)d.webhooks.forEach(w=>{
-            rows.push([w.timestamp?new Date(w.timestamp).toLocaleString():'',w.symbol||'',w.action||'',w.status||'',w.error||'OK']);
-        });
+        (d.webhooks||[]).forEach(w=>{rows.push([w.timestamp?new Date(w.timestamp).toLocaleString():'',w.symbol||'',w.action||'',w.status||'',w.error||''])});
+    }else if(type==='closed'){
+        title='Closed Positions';headers=['Symbol','Qty','Entry','Exit','P&L','P&L %','Closed'];
+        const d=await api('/api/closed-positions?limit=500&days=365');
+        (d.positions||[]).filter(p=>p.symbol!=='TEST').forEach(p=>{rows.push([p.symbol,p.qty,'$'+Number(p.open_price).toFixed(2),'$'+Number(p.close_price).toFixed(2),(p.pnl>=0?'+':'')+('$'+Number(p.pnl).toFixed(2)),Number(p.pnl_pct).toFixed(2)+'%',p.closed_at?new Date(p.closed_at).toLocaleString():''])});
+    }else if(type==='positions'){
+        title='Open Positions';headers=['Symbol','Side','Qty','Avg Entry','Current','Mkt Value','P&L','P&L %'];
+        const d=await api('/api/account');
+        (d.positions||[]).forEach(p=>{rows.push([p.symbol,p.side,p.qty,'$'+Number(p.avg_entry_price).toFixed(2),'$'+Number(p.current_price).toFixed(2),'$'+Number(p.market_value).toFixed(2),(p.unrealized_pl>=0?'+':'')+('$'+Number(p.unrealized_pl).toFixed(2)),(p.unrealized_plpc*100).toFixed(2)+'%'])});
+    }else if(type==='orders'){
+        title='Order History';headers=['Date','Symbol','Side','Qty','Filled','Price','Status'];
+        const d=await api('/api/orders?limit=500');
+        (d.orders||[]).forEach(o=>{rows.push([o.filled_at?new Date(o.filled_at).toLocaleString():o.submitted_at?new Date(o.submitted_at).toLocaleString():'',o.symbol,o.side.toUpperCase(),o.qty,o.filled_qty||0,o.filled_avg_price?'$'+Number(o.filled_avg_price).toFixed(2):'--',o.status])});
     }
+    return {headers,rows,title};
+}
 
-    // Build printable HTML
-    const printHtml=`<!DOCTYPE html><html><head><title>${title} - Maroon Investments</title><style>
-        body{font-family:Arial,sans-serif;padding:40px;color:#222}
-        h1{font-size:22px;margin-bottom:4px}h2{font-size:14px;color:#666;margin-bottom:20px;font-weight:normal}
-        table{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px}
-        th{text-align:left;padding:8px;background:#f5f5f5;border-bottom:2px solid #ddd;font-size:11px;text-transform:uppercase}
-        td{padding:8px;border-bottom:1px solid #eee}
-        .footer{margin-top:30px;font-size:11px;color:#999;border-top:1px solid #eee;padding-top:10px}
-    </style></head><body>
-        <h1>Maroon Investments</h1>
-        <h2>${title} — Generated ${now}</h2>
-        <table><thead><tr>${headers.map(h=>'<th>'+h+'</th>').join('')}</tr></thead>
-        <tbody>${rows.length?rows.map(r=>'<tr>'+r.map(c=>'<td>'+c+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="'+headers.length+'">No data available</td></tr>'}</tbody></table>
-        <div class="footer">Report generated by Maroon Investments Trading System<br>${rows.length} records • ${now}</div>
-    </body></html>`;
+function downloadCSV(type){
+    getDataset(type).then(({headers,rows,title})=>{
+        let csv=headers.join(',')+'\n';
+        rows.forEach(r=>{csv+=r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')+'\n'});
+        const blob=new Blob([csv],{type:'text/csv'});
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement('a');
+        a.href=url;a.download=title.replace(/\s+/g,'_')+'_'+new Date().toISOString().split('T')[0]+'.csv';
+        a.click();URL.revokeObjectURL(url);
+        toast(title+' downloaded as CSV');
+    });
+}
 
-    // Open in new window for print/PDF
-    const win=window.open('','_blank');
-    win.document.write(printHtml);
-    win.document.close();
-    setTimeout(()=>win.print(),500);
-
-    $('reportPreview').innerHTML=`<div style="color:var(--green);font-size:13px;text-align:center;padding:12px">Report opened in new tab — use Print > Save as PDF to export. ${rows.length} records generated.</div>`;
+async function generateReport(type){
+    const {headers,rows,title}=await getDataset(type==='pnl'?'closed':type);
+    const now=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+    const printHtml=`<!DOCTYPE html><html><head><title>${title} - Maroon Investments</title><style>body{font-family:Arial,sans-serif;padding:40px;color:#222}h1{font-size:22px;margin-bottom:4px}h2{font-size:14px;color:#666;margin-bottom:20px;font-weight:normal}table{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px}th{text-align:left;padding:8px;background:#f5f5f5;border-bottom:2px solid #ddd;font-size:11px;text-transform:uppercase}td{padding:8px;border-bottom:1px solid #eee}.footer{margin-top:30px;font-size:11px;color:#999;border-top:1px solid #eee;padding-top:10px}</style></head><body><h1>Maroon Investments</h1><h2>${title} — ${now}</h2><table><thead><tr>${headers.map(h=>'<th>'+h+'</th>').join('')}</tr></thead><tbody>${rows.length?rows.map(r=>'<tr>'+r.map(c=>'<td>'+c+'</td>').join('')+'</tr>').join(''):'<tr><td colspan="'+headers.length+'">No data</td></tr>'}</tbody></table><div class="footer">${rows.length} records • ${now}</div></body></html>`;
+    const win=window.open('','_blank');win.document.write(printHtml);win.document.close();setTimeout(()=>win.print(),500);
 }
 
 // Init
 const hash=window.location.hash.replace('#','');
 if(hash){const el=document.querySelector(`.nav-item[onclick*="'${hash}'"]`);if(el)go(hash,el)}
 function refreshAll(){checkHealth();loadAccount();loadActivity();loadClosed()}
-refreshAll();loadPositions();loadOrders();loadSettings();loadCharts();
+refreshAll();loadPositions();loadOrders();loadSettings();loadCharts();loadDataCounts();
 setInterval(refreshAll,15000);setInterval(loadOrders,30000);
 </script>
 </body>
