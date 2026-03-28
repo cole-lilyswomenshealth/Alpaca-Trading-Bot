@@ -426,7 +426,12 @@ async function loadSettings(){
 
 async function saveSettings(){
     const tg={};document.querySelectorAll('.toggle[data-key]').forEach(t=>{tg[t.dataset.key]=t.classList.contains('on')});
-    const payload={...tg,fibonacci_base:parseFloat($('s_fib_base').value),fibonacci_max_iterations:parseInt($('s_fib_max').value),fibonacci_symbol_bases:JSON.parse($('s_fib_symbols').value||'{}'),max_position_size:parseFloat($('s_max_pos').value),max_open_positions:parseInt($('s_max_open').value),max_daily_loss:parseFloat($('s_max_loss').value),profit_protection_threshold:parseFloat($('s_profit_thresh').value)};
+    let symbolBases={};
+    try{
+        const raw=$('s_fib_symbols').value.trim();
+        if(raw)symbolBases=JSON.parse(raw.replace(/:\s*\./g,': 0.'));
+    }catch(e){toast('Invalid JSON in symbol overrides — use format {"ETH/USD": 0.1}','err');return}
+    const payload={...tg,fibonacci_base:parseFloat($('s_fib_base').value),fibonacci_max_iterations:parseInt($('s_fib_max').value),fibonacci_symbol_bases:symbolBases,max_position_size:parseFloat($('s_max_pos').value),max_open_positions:parseInt($('s_max_open').value),max_daily_loss:parseFloat($('s_max_loss').value),profit_protection_threshold:parseFloat($('s_profit_thresh').value)};
     const d=await apiPost('/api/settings',payload);
     if(d.success){toast('Inputs saved');$('saveStatus').textContent='Saved '+new Date().toLocaleTimeString()}else toast(d.error||'Failed','err');
 }
