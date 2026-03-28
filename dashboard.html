@@ -497,7 +497,7 @@ async function generateReport(type){
     const {headers,rows,title}=await getDataset(type);
     const now=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
     const html=`<!DOCTYPE html><html><head><title>${title} - Maroon Investments</title><style>body{font-family:'Helvetica Neue',Arial,sans-serif;padding:48px;color:#1a1a1a;max-width:900px;margin:0 auto;font-size:13px}h1{font-size:24px;font-weight:700;margin:0}h2{font-size:13px;color:#666;margin:4px 0 0;font-weight:normal}.hl{border-bottom:3px solid #800020;margin:16px 0 24px;padding-bottom:12px}table{width:100%;border-collapse:collapse}th{text-align:left;padding:8px 10px;background:#f8f8f8;border-bottom:2px solid #ddd;font-size:11px;text-transform:uppercase;color:#666}td{padding:8px 10px;border-bottom:1px solid #eee}.ft{margin-top:32px;padding-top:12px;border-top:2px solid #e5e5e5;font-size:11px;color:#999}@media print{body{padding:24px}}</style></head><body><div class="hl"><h1>Maroon Investments</h1><h2>${title} — ${now}</h2></div><table><tr>${headers.map(h=>'<th>'+h+'</th>').join('')}</tr>${rows.map(r=>'<tr>'+r.map(c=>'<td>'+c+'</td>').join('')+'</tr>').join('')||'<tr><td colspan="'+headers.length+'">No data</td></tr>'}</table><div class="ft">${rows.length} records • ${now}</div></body></html>`;
-    const win=window.open('','_blank');win.document.write(html);win.document.close();setTimeout(()=>win.print(),500);
+    const win=window.open('','_blank');win.document.write(html);win.document.close();
 }
 
 async function generatePnlReport(){
@@ -638,7 +638,7 @@ This document is provided for informational purposes only and does not constitut
 </div>
 </body></html>`;
 
-    const win=window.open('','_blank');win.document.write(html);win.document.close();setTimeout(()=>win.print(),500);
+    const win=window.open('','_blank');win.document.write(html);win.document.close();
     toast('P&L Statement generated');
 }
 
