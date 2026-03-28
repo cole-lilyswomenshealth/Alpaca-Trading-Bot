@@ -564,6 +564,73 @@ async function generatePnlReport(){
         tradeRows+=`<tr><td>${p.closed_at?new Date(p.closed_at).toLocaleDateString():''}</td><td>${p.symbol}</td><td style="text-align:right">${p.qty}</td><td style="text-align:right">$${Number(p.open_price).toFixed(2)}</td><td style="text-align:right">$${Number(p.close_price).toFixed(2)}</td><td style="text-align:right">$${(p.open_price*p.qty).toFixed(2)}</td><td style="text-align:right;color:${p.pnl>=0?'#16a34a':'#dc2626'}">${p.pnl>=0?'+':''}$${p.pnl.toFixed(2)}</td><td style="text-align:right">${Number(p.pnl_pct).toFixed(2)}%</td></tr>`;
     });
 
+    // Draw portfolio chart as image for the report
+    const eqData=history.history?.equity||[];
+    const timestamps=history.history?.timestamp||[];
+    const plArr=history.history?.profit_loss||[];
+    let chartImg='';
+    if(eqData.length>1){
+        const cvs=document.createElement('canvas');cvs.width=800;cvs.height=200;
+        const ctx=cvs.getContext('2d');
+        const pad=50,padR=20,padTop=20,padBot=30;
+        const w=800,ht=200;
+        const minV=Math.min(...eqData)*0.999,maxV=Math.max(...eqData)*1.001,range=maxV-minV||1;
+        // Background
+        ctx.fillStyle='#fafafa';ctx.fillRect(0,0,w,ht);
+        // Grid
+        ctx.strokeStyle='#e5e5e5';ctx.lineWidth=0.5;
+        for(let i=0;i<=4;i++){const y=padTop+(ht-padTop-padBot)*i/4;ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(w-padR,y);ctx.stroke();
+            ctx.fillStyle='#999';ctx.font='10px Arial';const lbl='$'+((maxV-range*i/4)).toFixed(0);ctx.fillText(lbl,2,y+3)}
+        // Line
+        ctx.beginPath();
+        const pts=[];
+        eqData.forEach((v,i)=>{const x=pad+(w-pad-padR)*i/(eqData.length-1);const y=padTop+(ht-padTop-padBot)*(1-(v-minV)/range);pts.push({x,y});if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)});
+        ctx.strokeStyle='#800020';ctx.lineWidth=2;ctx.stroke();
+        // Fill
+        const grad=ctx.createLinearGradient(0,0,0,ht);grad.addColorStop(0,'rgba(128,0,32,0.15)');grad.addColorStop(1,'rgba(128,0,32,0)');
+        ctx.lineTo(pts[pts.length-1].x,ht-padBot);ctx.lineTo(pts[0].x,ht-padBot);ctx.closePath();ctx.fillStyle=grad;ctx.fill();
+        // Date labels
+        ctx.fillStyle='#999';ctx.font='10px Arial';
+        if(timestamps.length>1){
+            const fd=new Date(timestamps[0]*1000).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+            const ld=new Date(timestamps[timestamps.length-1]*1000).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+            const md=timestamps.length>2?new Date(timestamps[Math.floor(timestamps.length/2)]*1000).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
+            ctx.fillText(fd,pad,ht-8);
+            if(md)ctx.fillText(md,w/2-15,ht-8);
+            ctx.fillText(ld,w-padR-ctx.measureText(ld).width,ht-8);
+        }
+        // Dot on last
+        const last=pts[pts.length-1];ctx.beginPath();ctx.arc(last.x,last.y,4,0,Math.PI*2);ctx.fillStyle='#800020';ctx.fill();
+        chartImg=cvs.toDataURL('image/png');
+    }
+
+    // Daily P&L bar chart as image
+    let barImg='';
+    if(plArr.length>0){
+        const cvs2=document.createElement('canvas');cvs2.width=800;cvs2.height=160;
+        const ctx2=cvs2.getContext('2d');
+        ctx2.fillStyle='#fafafa';ctx2.fillRect(0,0,800,160);
+        const count=Math.min(plArr.length,7);const startI=plArr.length-count;
+        const vals=plArr.slice(startI);const maxB=Math.max(...vals.map(Math.abs),0.01);
+        const barW=60,gap=(800-count*barW)/(count+1);
+        vals.forEach((v,i)=>{
+            const barH=Math.max(Math.abs(v)/maxB*90,4);
+            const x=gap+(barW+gap)*i;const y=v>=0?110-barH:110;
+            ctx2.fillStyle=v>=0?'#16a34a':'#dc2626';
+            ctx2.beginPath();ctx2.roundRect(x,y,barW,barH,3);ctx2.fill();
+            // Value label
+            ctx2.fillStyle='#333';ctx2.font='bold 10px Arial';ctx2.textAlign='center';
+            const label=(v>=0?'+':'')+('$'+Math.abs(v).toFixed(2));
+            ctx2.fillText(label,x+barW/2,v>=0?y-4:y+barH+12);
+            // Date label
+            ctx2.fillStyle='#999';ctx2.font='10px Arial';
+            const dt=timestamps[startI+i]?new Date(timestamps[startI+i]*1000).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
+            ctx2.fillText(dt,x+barW/2,145);
+        });
+        ctx2.textAlign='start';
+        barImg=cvs2.toDataURL('image/png');
+    }
+
     const html=`<!DOCTYPE html><html><head><title>P&L Statement - Maroon Investments</title>
 <style>
 body{font-family:'Helvetica Neue',Arial,sans-serif;padding:48px;color:#1a1a1a;max-width:900px;margin:0 auto;font-size:13px;line-height:1.5}
@@ -649,9 +716,15 @@ ${tradeRows||'<tr><td colspan="8" style="text-align:center;color:#999">No closed
 </table>
 </div>
 
+<div class="section">
+<div class="section-title">Portfolio Performance</div>
+${chartImg?`<p style="font-size:11px;color:#666;margin-bottom:8px">Portfolio Value — 1 Month</p><img src="${chartImg}" style="width:100%;border:1px solid #e5e5e5;border-radius:4px">`:'<p style="color:#999">Not enough data for chart</p>'}
+${barImg?`<p style="font-size:11px;color:#666;margin:16px 0 8px">Daily P&L</p><img src="${barImg}" style="width:100%;border:1px solid #e5e5e5;border-radius:4px">`:''}
+</div>
+
 <div class="footer">
 <strong>Maroon Investments</strong> — Confidential<br>
-Generated ${reportDate} • ${pos.length} closed trades • NAV $${Number(nav).toLocaleString('en-US',{minimumFractionDigits:2})}
+Generated ${reportDate} • ${pos.length} closed trades • NAV $\${Number(nav).toLocaleString('en-US',{minimumFractionDigits:2})}
 </div>
 <div class="disclaimer">
 This document is provided for informational purposes only and does not constitute an offer to sell or a solicitation of an offer to buy any securities. Past performance is not indicative of future results. All investments involve risk, including the possible loss of principal. This report was generated automatically and has not been audited.
