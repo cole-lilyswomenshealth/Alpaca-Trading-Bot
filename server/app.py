@@ -90,14 +90,17 @@ def webhook():
         webhook_log['payload'] = data
         logger.info(f"Received webhook: {data}")
         
+        symbol = data.get('symbol', '') if data else ''
+        action = data.get('action', '') if data else ''
+        qty = data.get('qty') or data.get('quantity', 0) if data else 0
+        
         # Check if this is an options trade
         if data.get('asset_type') == 'option' or data.get('option_direction'):
-            # Handle 0DTE options trade
             underlying = data.get('symbol', 'SPY')
-            direction = data.get('option_direction', 'call')  # 'call' or 'put'
+            direction = data.get('option_direction', 'call')
             qty = int(data.get('qty', 1))
-            side = data.get('side', 'buy')  # 'buy' or 'sell'
-            std_devs = float(data.get('std_devs', 2.5))  # Standard deviations for OTM
+            side = data.get('side', 'buy')
+            std_devs = float(data.get('std_devs', 2.5))
             
             order = options_trader.trade_0dte_option(underlying, direction, qty, side, std_devs)
             
@@ -114,7 +117,6 @@ def webhook():
             else:
                 result = {'success': False, 'error': 'Failed to place option order'}
         else:
-            # Execute regular stock/crypto order
             result = order_manager.execute_webhook_order(data)
         
         webhook_log['response'] = result
@@ -123,11 +125,15 @@ def webhook():
             webhook_log['status'] = 'success'
             logger.info(f"Order executed successfully: {result}")
             webhook_logs.append(webhook_log)
+            # Log to Supabase
+            _log_webhook_to_supabase(data, symbol, action, qty, 'success', result, None, request.remote_addr)
             return jsonify(result), 200
         else:
-            webhook_log['status'] = 'error'
+            status = 'blocked' if 'PROFIT PROTECTION' in str(result.get('error', '')) else 'error'
+            webhook_log['status'] = status
             logger.error(f"Order execution failed: {result}")
             webhook_logs.append(webhook_log)
+            _log_webhook_to_supabase(data, symbol, action, qty, status, result, str(result.get('error', '')), request.remote_addr)
             return jsonify(result), 400
             
     except Exception as e:
@@ -135,7 +141,18 @@ def webhook():
         webhook_log['status'] = 'error'
         logger.error(f"Webhook error: {str(e)}")
         webhook_logs.append(webhook_log)
+        _log_webhook_to_supabase(data if 'data' in dir() else {}, symbol if 'symbol' in dir() else '', '', 0, 'error', None, str(e), request.remote_addr)
         return jsonify({'error': str(e)}), 500
+
+def _log_webhook_to_supabase(payload, symbol, action, qty, status, response, error_msg, source_ip):
+    """Helper to log webhook to Supabase without breaking the request"""
+    try:
+        from services.supabase_client import SupabaseClient
+        sb = SupabaseClient()
+        if sb.is_connected():
+            sb.log_webhook(payload, symbol, action, qty, status, response, error_msg, source_ip)
+    except Exception as e:
+        logger.error(f"Failed to log webhook to Supabase: {e}")
 
 @app.route('/debug', methods=['GET'])
 def debug_config():
@@ -369,14 +386,34 @@ def get_connections():
 
 @app.route('/api/webhooks', methods=['GET'])
 def get_webhook_logs():
-    """Get webhook logs"""
+    """Get webhook logs from Supabase"""
     try:
-        # Return the most recent 50 webhooks
-        recent_logs = webhook_logs[-50:][::-1]  # Reverse to show newest first
+        from services.supabase_client import SupabaseClient
+        sb = SupabaseClient()
+        
+        if sb.is_connected():
+            logs = sb.get_webhook_log(limit=50)
+            if logs:
+                webhooks = []
+                for log in logs:
+                    webhooks.append({
+                        'timestamp': log.get('received_at'),
+                        'payload': log.get('payload'),
+                        'symbol': log.get('symbol'),
+                        'action': log.get('action'),
+                        'status': log.get('status'),
+                        'response': log.get('response'),
+                        'error': log.get('error_message'),
+                    })
+                return jsonify({'success': True, 'webhooks': webhooks, 'total': len(webhooks), 'source': 'supabase'})
+        
+        # Fallback to in-memory
+        recent_logs = webhook_logs[-50:][::-1]
         return jsonify({
             'success': True, 
             'webhooks': recent_logs,
-            'total': len(webhook_logs)
+            'total': len(webhook_logs),
+            'source': 'memory'
         })
     except Exception as e:
         logger.error(f"Error getting webhook logs: {str(e)}")

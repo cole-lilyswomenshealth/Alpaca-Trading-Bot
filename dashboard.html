@@ -150,9 +150,9 @@
     <!-- WEBHOOKS -->
     <div class="content" id="pg-webhooks">
         <div class="grid g3" style="margin-bottom:12px">
-            <div class="panel"><div class="stat-block"><div class="val flat" id="whTotal">0</div><div class="lbl">Total Fills</div></div></div>
-            <div class="panel"><div class="stat-block"><div class="val up" id="whBuys">0</div><div class="lbl">Buys</div></div></div>
-            <div class="panel"><div class="stat-block"><div class="val down" id="whSells">0</div><div class="lbl">Sells</div></div></div>
+            <div class="panel"><div class="stat-block"><div class="val flat" id="whTotal">0</div><div class="lbl">Total Webhooks</div></div></div>
+            <div class="panel"><div class="stat-block"><div class="val up" id="whBuys">0</div><div class="lbl">Successful</div></div></div>
+            <div class="panel"><div class="stat-block"><div class="val down" id="whSells">0</div><div class="lbl">Blocked / Failed</div></div></div>
         </div>
         <div class="panel"><div class="panel-header"><span class="panel-title">Webhook Activity</span><button class="btn btn-ghost btn-sm" onclick="loadActivity()">Refresh</button></div><div class="panel-body no-pad"><div class="scroll-table" style="max-height:calc(100vh - 220px)" id="actTable"><div class="empty">Loading...</div></div></div></div>
     </div>
@@ -340,15 +340,36 @@ async function loadOrders(){
 async function cancelOrd(id){if(!confirm('Cancel?'))return;const d=await fetch(API+'/api/orders/'+id,{method:'DELETE'}).then(r=>r.json());if(d.success){toast('Cancelled');loadOrders()}else toast(d.error||'Failed','err')}
 
 async function loadActivity(){
-    const d=await api('/api/orders?limit=100');if(!d.orders||!d.orders.length){$('actTable').innerHTML='<div class="empty">No activity</div>';$('overviewActivity').innerHTML='<div class="empty">No activity</div>';return}
-    const filled=d.orders.filter(o=>o.status==='filled');
-    $('whTotal').textContent=filled.length;$('whBuys').textContent=filled.filter(o=>o.side==='buy').length;$('whSells').textContent=filled.filter(o=>o.side==='sell').length;
-    let h='<table><tr><th>Time</th><th>Symbol</th><th>Side</th><th>Qty</th><th>Price</th><th>Cost</th><th>Status</th></tr>';
-    d.orders.forEach(o=>{const t=o.filled_at?new Date(o.filled_at).toLocaleString():o.submitted_at?new Date(o.submitted_at).toLocaleString():'--';const sc=o.status==='filled'?'b-green':o.status==='canceled'?'b-red':'b-orange';const c=o.filled_avg_price&&o.filled_qty?(o.filled_avg_price*o.filled_qty):0;
-        h+=`<tr><td style="color:var(--muted)">${t}</td><td class="sym">${o.symbol}</td><td class="${o.side==='buy'?'up':'down'}">${o.side.toUpperCase()}</td><td>${o.filled_qty||o.qty}</td><td>${o.filled_avg_price?fmt(o.filled_avg_price):'--'}</td><td>${c?fmt(c):'--'}</td><td><span class="badge ${sc}">${o.status}</span></td></tr>`});
+    const d=await api('/api/webhooks');
+    if(!d.success||!d.webhooks||!d.webhooks.length){
+        // Fallback to orders
+        const od=await api('/api/orders?limit=100');
+        if(!od.orders||!od.orders.length){$('actTable').innerHTML='<div class="empty">No activity</div>';$('overviewActivity').innerHTML='<div class="empty">No activity</div>';return}
+        const filled=od.orders.filter(o=>o.status==='filled');
+        $('whTotal').textContent=filled.length;$('whBuys').textContent=filled.filter(o=>o.side==='buy').length;$('whSells').textContent=filled.filter(o=>o.side==='sell').length;
+        let h='<table><tr><th>Time</th><th>Symbol</th><th>Side</th><th>Qty</th><th>Price</th><th>Cost</th><th>Status</th></tr>';
+        od.orders.forEach(o=>{const t=o.filled_at?new Date(o.filled_at).toLocaleString():o.submitted_at?new Date(o.submitted_at).toLocaleString():'--';const sc=o.status==='filled'?'b-green':o.status==='canceled'?'b-red':'b-orange';const c=o.filled_avg_price&&o.filled_qty?(o.filled_avg_price*o.filled_qty):0;
+            h+=`<tr><td style="color:var(--muted)">${t}</td><td class="sym">${o.symbol}</td><td class="${o.side==='buy'?'up':'down'}">${o.side.toUpperCase()}</td><td>${o.filled_qty||o.qty}</td><td>${o.filled_avg_price?fmt(o.filled_avg_price):'--'}</td><td>${c?fmt(c):'--'}</td><td><span class="badge ${sc}">${o.status}</span></td></tr>`});
+        h+='</table>';$('actTable').innerHTML=h;
+        let mh='<table><tr><th>Time</th><th>Symbol</th><th>Side</th></tr>';
+        filled.slice(0,6).forEach(o=>{mh+=`<tr><td style="color:var(--muted)">${o.filled_at?new Date(o.filled_at).toLocaleTimeString():'--'}</td><td class="sym">${o.symbol}</td><td class="${o.side==='buy'?'up':'down'}">${o.side.toUpperCase()}</td></tr>`});
+        mh+='</table>';$('overviewActivity').innerHTML=mh;
+        return;
+    }
+    const wh=d.webhooks;
+    const ok=wh.filter(w=>w.status==='success').length;
+    const blocked=wh.filter(w=>w.status==='blocked').length;
+    $('whTotal').textContent=wh.length;$('whBuys').textContent=ok;$('whSells').textContent=blocked;
+    let h='<table><tr><th>Time</th><th>Symbol</th><th>Action</th><th>Status</th><th>Details</th></tr>';
+    wh.forEach(w=>{
+        const t=w.timestamp?new Date(w.timestamp).toLocaleString():'--';
+        const sc=w.status==='success'?'b-green':w.status==='blocked'?'b-orange':'b-red';
+        const detail=w.error||'OK';
+        h+=`<tr><td style="color:var(--muted)">${t}</td><td class="sym">${w.symbol||'--'}</td><td class="${w.action==='buy'?'up':'down'}">${(w.action||'--').toUpperCase()}</td><td><span class="badge ${sc}">${w.status}</span></td><td style="color:var(--muted);font-size:11px;max-width:250px;overflow:hidden;text-overflow:ellipsis">${detail}</td></tr>`});
     h+='</table>';$('actTable').innerHTML=h;
-    let mh='<table><tr><th>Time</th><th>Symbol</th><th>Side</th></tr>';
-    filled.slice(0,6).forEach(o=>{mh+=`<tr><td style="color:var(--muted)">${o.filled_at?new Date(o.filled_at).toLocaleTimeString():'--'}</td><td class="sym">${o.symbol}</td><td class="${o.side==='buy'?'up':'down'}">${o.side.toUpperCase()}</td></tr>`});
+    let mh='<table><tr><th>Time</th><th>Symbol</th><th>Status</th></tr>';
+    wh.slice(0,6).forEach(w=>{const sc=w.status==='success'?'b-green':w.status==='blocked'?'b-orange':'b-red';
+        mh+=`<tr><td style="color:var(--muted)">${w.timestamp?new Date(w.timestamp).toLocaleTimeString():'--'}</td><td class="sym">${w.symbol||'--'}</td><td><span class="badge ${sc}">${w.status}</span></td></tr>`});
     mh+='</table>';$('overviewActivity').innerHTML=mh;
 }
 
