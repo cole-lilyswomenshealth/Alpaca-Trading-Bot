@@ -126,7 +126,13 @@ def webhook():
             logger.info(f"Order executed successfully: {result}")
             webhook_logs.append(webhook_log)
             # Log to Supabase
-            _log_webhook_to_supabase(data, symbol, action, qty, 'success', result, None, request.remote_addr)
+            safe_result = {}
+            for k,v in result.items():
+                try:
+                    safe_result[k] = str(v) if not isinstance(v, (str, int, float, bool, type(None))) else v
+                except:
+                    safe_result[k] = str(v)
+            _log_webhook_to_supabase(data, symbol, action, qty, 'success', safe_result, None, request.remote_addr)
             return jsonify(result), 200
         else:
             status = 'blocked' if 'PROFIT PROTECTION' in str(result.get('error', '')) else 'error'
@@ -147,12 +153,15 @@ def webhook():
 def _log_webhook_to_supabase(payload, symbol, action, qty, status, response, error_msg, source_ip):
     """Helper to log webhook to Supabase without breaking the request"""
     try:
-        from services.supabase_client import SupabaseClient
-        sb = SupabaseClient()
-        if sb.is_connected():
-            sb.log_webhook(payload, symbol, action, qty, status, response, error_msg, source_ip)
+        if order_manager.supabase.is_connected():
+            order_manager.supabase.log_webhook(payload, symbol, action, qty, status, response, error_msg, source_ip)
+            logger.info(f"Webhook logged to Supabase: {symbol} {action} {status}")
+        else:
+            logger.warning("Supabase not connected - webhook not logged to DB")
     except Exception as e:
         logger.error(f"Failed to log webhook to Supabase: {e}")
+        import traceback
+        traceback.print_exc()
 
 @app.route('/debug', methods=['GET'])
 def debug_config():
