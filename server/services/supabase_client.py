@@ -221,19 +221,19 @@ class SupabaseClient:
     def log_webhook(self, payload, symbol, action, quantity, status, response=None, error_message=None, source_ip=None):
         """Log every webhook received by the server"""
         try:
-            import json
             data = {
-                'payload': json.dumps(payload) if isinstance(payload, dict) else payload,
+                'payload': payload if isinstance(payload, dict) else {},
                 'symbol': symbol,
                 'action': action,
-                'quantity': quantity,
+                'quantity': float(quantity) if quantity else 0,
                 'status': status,
-                'response': json.dumps(response) if isinstance(response, dict) else response,
+                'response': response if isinstance(response, dict) else {},
                 'error_message': error_message,
                 'source_ip': source_ip,
                 'received_at': datetime.now().isoformat()
             }
             response_data = self.client.from_('webhook_log').insert(data).execute()
+            logger.info(f"Webhook logged to Supabase: {symbol} {action} {status}")
             return response_data.data[0] if response_data.data else None
         except Exception as e:
             logger.error(f"Error logging webhook: {e}")
