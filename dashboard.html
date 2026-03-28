@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
-        :root{--bg:#0a0c10;--sidebar:#111318;--panel:rgba(22,26,37,.8);--panel2:rgba(28,32,48,.6);--border:rgba(255,255,255,.06);--text:#c8cdd8;--text-bright:#f0f2f7;--muted:#5a6070;--accent:#4a90ff;--accent-dim:rgba(74,144,255,.1);--green:#34d399;--green-dim:rgba(52,211,153,.1);--red:#f87171;--red-dim:rgba(248,113,113,.1);--orange:#fbbf24;--orange-dim:rgba(251,191,36,.1)}
+        :root{--bg:#0a0c10;--sidebar:#111318;--panel:rgba(22,26,37,.9);--panel2:rgba(28,32,48,.6);--border:rgba(255,255,255,.06);--text:#d1d5e0;--text-bright:#f0f2f7;--muted:#5a6070;--accent:#4a90ff;--accent-dim:rgba(74,144,255,.1);--green:#22c55e;--green-dim:rgba(34,197,94,.12);--red:#ef4444;--red-dim:rgba(239,68,68,.12);--orange:#f59e0b;--orange-dim:rgba(251,191,36,.12)}
         body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;-webkit-font-smoothing:antialiased}
 
         /* Sidebar */
@@ -151,25 +151,21 @@
 
     <!-- PORTFOLIO -->
     <div class="content active" id="pg-portfolio">
-        <div class="grid g4" style="margin-bottom:12px">
-            <div class="panel"><div class="stat-block"><div class="lbl">Portfolio Value</div><div class="val flat" id="equity">--</div></div></div>
-            <div class="panel"><div class="stat-block"><div class="lbl">Day P&L</div><div class="val" id="dayPl">--</div></div></div>
-            <div class="panel"><div class="stat-block"><div class="lbl">Buying Power</div><div class="val flat" id="buyPow">--</div></div></div>
-            <div class="panel"><div class="stat-block"><div class="lbl">Open Positions</div><div class="val flat" id="openPos">--</div></div></div>
+    <div class="content active" id="pg-portfolio">
+        <div class="panel" style="background:linear-gradient(135deg,rgba(128,0,32,.15),rgba(74,144,255,.06));border:none;padding:28px 24px;margin-bottom:20px;border-radius:20px">
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap">
+                <div style="width:48px;height:48px;background:linear-gradient(135deg,#800020,#b03050);border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 4 5-9"/></svg></div>
+                <div><div style="font-size:12px;color:var(--muted)">Total Portfolio Value</div><div style="font-size:32px;font-weight:700;color:var(--text-bright);letter-spacing:-1px" id="equity">--</div></div>
+                <div style="margin-left:auto;text-align:right"><div style="font-size:12px;color:var(--muted)">Today's Change</div><div style="font-size:24px;font-weight:700" id="dayPl">--</div></div>
+            </div>
+            <div style="display:flex;gap:28px;flex-wrap:wrap">
+                <div style="display:flex;align-items:center;gap:8px"><div style="width:8px;height:8px;border-radius:50%;background:var(--accent)"></div><span style="font-size:12px;color:var(--muted)">Buying Power</span><span style="font-size:14px;font-weight:600;color:var(--text-bright)" id="buyPow">--</span></div>
+                <div style="display:flex;align-items:center;gap:8px"><div style="width:8px;height:8px;border-radius:50%;background:var(--green)"></div><span style="font-size:12px;color:var(--muted)">Open Positions</span><span style="font-size:14px;font-weight:600;color:var(--text-bright)" id="openPos">--</span></div>
+            </div>
         </div>
-        <div class="grid g2" style="margin-bottom:12px">
-            <div class="panel">
-                <div class="panel-header"><span class="panel-title">Portfolio Value (1 Month)</span></div>
-                <div class="panel-body chart-wrap">
-                    <canvas id="lineChart" class="line-chart"></canvas>
-                    <div class="chart-crosshair" id="crosshair"></div>
-                    <div class="chart-tooltip" id="chartTip"><span class="tt-val" id="ttVal"></span><br><span class="tt-date" id="ttDate"></span></div>
-                </div>
-            </div>
-            <div class="panel">
-                <div class="panel-header"><span class="panel-title">Daily P&L (7 Days)</span></div>
-                <div class="panel-body"><div id="barChart" class="bar-chart"></div></div>
-            </div>
+        <div class="grid g2" style="margin-bottom:16px">
+            <div class="panel"><div class="panel-header"><span class="panel-title">Portfolio Value</span><span style="font-size:11px;color:var(--muted)">1 Month</span></div><div class="panel-body chart-wrap" style="padding:12px"><canvas id="lineChart" class="line-chart"></canvas><div class="chart-crosshair" id="crosshair"></div><div class="chart-tooltip" id="chartTip"><span class="tt-val" id="ttVal"></span><br><span class="tt-date" id="ttDate"></span></div></div></div>
+            <div class="panel"><div class="panel-header"><span class="panel-title">Daily P&L</span><span style="font-size:11px;color:var(--muted)">7 Days</span></div><div class="panel-body" style="padding:12px"><div id="barChart" class="bar-chart"></div></div></div>
         </div>
         <div class="grid g-main">
             <div class="panel"><div class="panel-header"><span class="panel-title">Positions</span></div><div class="panel-body no-pad"><div class="scroll-table" id="overviewPositions"><div class="empty">Loading...</div></div></div></div>
@@ -179,7 +175,6 @@
             </div>
         </div>
     </div>
-    <!-- POSITIONS -->
     <div class="content" id="pg-positions">
         <div class="panel"><div class="panel-header"><span class="panel-title">Open Positions</span><button class="btn btn-ghost btn-sm" onclick="loadPositions()">Refresh</button></div><div class="panel-body no-pad"><div id="posTable"><div class="empty">Loading...</div></div></div></div>
     </div>
@@ -198,10 +193,13 @@
     </div>
     <!-- CLOSED -->
     <div class="content" id="pg-closed">
-        <div class="grid g3" style="margin-bottom:12px">
-            <div class="panel"><div class="stat-block"><div class="lbl">Total Realized P&L</div><div class="val" id="clTotalPnl">--</div></div></div>
-            <div class="panel"><div class="stat-block"><div class="lbl">Return on Capital</div><div class="val" id="clRoc">--</div></div></div>
-            <div class="panel"><div class="stat-block"><div class="lbl">Closed Trades</div><div class="val flat" id="clCount">0</div></div></div>
+    <div class="content" id="pg-closed">
+        <div class="panel" style="background:linear-gradient(135deg,rgba(34,197,94,.08),rgba(74,144,255,.05));border:none;padding:24px;margin-bottom:16px;border-radius:20px;display:flex;gap:32px;align-items:center;flex-wrap:wrap">
+            <div><div style="font-size:12px;color:var(--muted);margin-bottom:4px">Total Realized P&L</div><div style="font-size:28px;font-weight:700" id="clTotalPnl">--</div></div>
+            <div style="width:1px;height:40px;background:var(--border)"></div>
+            <div><div style="font-size:12px;color:var(--muted);margin-bottom:4px">Return on Capital</div><div style="font-size:28px;font-weight:700" id="clRoc">--</div></div>
+            <div style="width:1px;height:40px;background:var(--border)"></div>
+            <div><div style="font-size:12px;color:var(--muted);margin-bottom:4px">Closed Trades</div><div style="font-size:28px;font-weight:700;color:var(--text-bright)" id="clCount">0</div></div>
         </div>
         <div class="panel"><div class="panel-header"><span class="panel-title">Closed Trades</span><button class="btn btn-ghost btn-sm" onclick="loadClosed()">Refresh</button></div><div class="panel-body no-pad"><div class="scroll-table" style="max-height:calc(100vh - 220px)" id="closedTable"><div class="empty">Loading...</div></div></div></div>
     </div>
