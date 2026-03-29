@@ -42,7 +42,7 @@
         .up{color:var(--green)}.down{color:var(--red)}.flat{color:var(--text-bright)}
         table{width:100%;border-collapse:collapse;font-size:12px}
         th{text-align:left;padding:8px 12px;color:var(--muted);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;background:var(--panel2);border-bottom:1px solid var(--border);position:sticky;top:0}
-        td{padding:8px 12px;border-bottom:1px solid rgba(74,32,40,.4);transition:background .15s,padding-left .15s}tr:hover td{background:rgba(128,0,32,.07);padding-left:14px}.sym{font-weight:600;color:var(--text-bright)}
+        td{padding:8px 12px;border-bottom:1px solid rgba(74,32,40,.4)}tr:hover td{background:rgba(128,0,32,.05)}.sym{font-weight:600;color:var(--text-bright)}
         label{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px}
         input,select{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:6px;font-size:13px;font-family:inherit;outline:none;transition:border .2s,box-shadow .2s}input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 8px rgba(128,0,32,.25)}
         .field{margin-bottom:14px}.row{display:flex;gap:12px}.row>div{flex:1}
@@ -72,7 +72,7 @@
         .line-chart{width:100%;height:160px;cursor:crosshair}
         @media(max-width:768px){.sidebar{width:48px}.nav-item span{display:none}.g2,.g3,.g4,.g-main{grid-template-columns:1fr}.row{flex-direction:column}.topbar{padding:0 10px}}
         .btn-side,.btn-chain-type,.btn-opt-side{flex:1}
-        .chain-strike{cursor:pointer;transition:all .2s}.chain-strike:hover td{background:rgba(128,0,32,.08);padding-left:14px}.chain-strike.sel td{background:var(--accent-dim);border-left:2px solid var(--accent)}.chain-strike.atm{border-left:3px solid var(--accent)}
+        .chain-strike{cursor:pointer;transition:background .2s}.chain-strike:hover td{background:rgba(128,0,32,.08)}.chain-strike.sel td{background:var(--accent-dim);border-left:2px solid var(--accent)}.chain-strike.atm{border-left:3px solid var(--accent)}
     </style>
 </head>
 <body>
