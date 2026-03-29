@@ -59,7 +59,6 @@ Thumbs.db
 *.json
 !package.json
 !package-lock.json
-position_tracker.json
 
 # Kiro
 .kiro/

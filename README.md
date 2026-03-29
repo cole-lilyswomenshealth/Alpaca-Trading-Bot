@@ -11,11 +11,9 @@ Webhook-based trading system connecting TradingView alerts to Alpaca Markets wit
 - **Stock Trading** — Market, limit, and stop orders with live quote lookup
 - **Live Strategy Settings** — Change strategy parameters on the fly without restarting
 - **Trade Tracking** — All trades saved to Supabase (with Alpaca fallback)
-- **Consolidated Dashboard** — Portfolio overview, positions, orders, webhooks, closed trades, and strategy inputs in one UI
-- **Trading Dashboard** — Dedicated execution dashboard for stocks and options with option chain browser
+- **Consolidated Dashboard** — Portfolio overview, positions, orders, webhooks, closed trades, strategy inputs, and trading all in one UI
 - **Portfolio Charts** — Portfolio value line chart and daily P&L bar chart
 - **RSI Scanner** — Multiple scanner modes (quote-based, streaming, auto) for finding trade setups
-- **Multi-Account Support** — Optional second Alpaca account configuration
 - **GCP Deployment** — Auto-deploy endpoint for CI/CD
 
 ## Architecture
@@ -59,7 +57,7 @@ Use the ngrok URL to access dashboards from your phone or anywhere. Point Tradin
 
 ## Dashboards
 
-### Main Dashboard (`/dashboard`)
+### Dashboard (`/dashboard`)
 Consolidated single-page dashboard with sidebar navigation:
 | Tab | Description |
 |-----|-------------|
@@ -69,15 +67,7 @@ Consolidated single-page dashboard with sidebar navigation:
 | Webhooks | Webhook activity log |
 | Closed | Closed trade history with P&L |
 | Inputs | Live strategy settings — trading toggles, Fibonacci sizing, profit protection, risk limits |
-
-### Trading Dashboard (`/trading.html`)
-Dedicated trade execution interface:
-| Tab | Description |
-|-----|-------------|
-| Stocks | Place stock orders (market/limit/stop), buy/sell/long/short, live quote lookup |
-| Options | Full option chain browser — pick symbol, expiration, calls/puts, see bid/ask/volume/OI, click a strike to trade |
-| Positions | Open stock positions with close buttons |
-| Orders | Recent orders with cancel buttons |
+| Trade | Stock orders (market/limit/stop), option chain browser with expiration picker, option positions |
 
 ## API Endpoints
 
@@ -161,7 +151,6 @@ Options webhook:
 ├── server/
 │   ├── app.py                      # Flask server + all API endpoints
 │   ├── config.py                   # Environment config with Supabase live-reload
-│   ├── accounts_config.py          # Multi-account configuration
 │   └── services/
 │       ├── alpaca_client.py        # Alpaca API wrapper (trading + market data)
 │       ├── order_manager.py        # Order execution + Fibonacci sizing
@@ -170,17 +159,14 @@ Options webhook:
 │       ├── risk_manager.py         # Risk validation
 │       ├── portfolio_analytics.py  # Portfolio metrics calculation
 │       ├── supabase_client.py      # Supabase database client
-│       ├── lot_tracker.py          # Lot-level position tracking
 │       ├── rsi_scanner.py          # RSI-based stock scanning
 │       ├── quote_based_rsi_scanner.py  # Quote-based RSI scanner
 │       ├── streaming_rsi_scanner.py    # Streaming RSI scanner
-│       ├── auto_rsi_scanner.py     # Autonomous RSI scanner
-│       └── multi_account_manager.py    # Multi-account support
-├── dashboard.html                  # Consolidated main dashboard (portfolio, positions, orders, settings)
-├── trading.html                    # Trading execution dashboard (stocks + options chain)
+│       └── auto_rsi_scanner.py     # Autonomous RSI scanner
+├── dashboard.html                  # Consolidated dashboard (portfolio, positions, orders, settings, trading)
+├── supabase-schema.sql             # Supabase database schema
 ├── .env.example                    # Environment template
-├── requirements.txt                # Python dependencies
-└── position_tracker.json           # Local Fibonacci counter state
+└── requirements.txt                # Python dependencies
 ```
 
 ## Configuration

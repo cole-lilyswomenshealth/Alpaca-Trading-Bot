@@ -22,9 +22,6 @@ app.config.from_object(Config)
 CORS(app)
 
 from services.portfolio_analytics import PortfolioAnalytics
-# from services.screener import ScreenerService
-# from services.auto_scanner import AutoScanner
-# from services.smart_screener import SmartScreener
 from services.rsi_scanner import RSIScanner
 
 # Initialize services
@@ -34,9 +31,6 @@ risk_manager = RiskManager(alpaca_client)
 portfolio_analytics = PortfolioAnalytics(alpaca_client)
 options_trader = OptionsTrader(alpaca_client)
 rsi_scanner = RSIScanner()
-# screener_service = ScreenerService(alpaca_client)
-# smart_screener = SmartScreener(alpaca_client)
-# auto_scanner = AutoScanner(alpaca_client, order_manager)
 
 # In-memory webhook log storage
 webhook_logs = []
