@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
-        :root{--bg:#0c0a0e;--sidebar:#14101a;--panel:#1a1220;--panel2:#201828;--border:#3a2030;--text:#d8ccd0;--text-bright:#f0e8ec;--muted:#7a6070;--accent:#a0304a;--accent-dim:rgba(160,48,74,.15);--green:#22c55e;--green-dim:rgba(34,197,94,.1);--red:#ef4444;--red-dim:rgba(239,68,68,.1);--orange:#f59e0b;--orange-dim:rgba(245,158,11,.1)}
+        :root{--bg:#0e0708;--sidebar:#1a0c10;--panel:#1e1014;--panel2:#261418;--border:#4a2028;--text:#d8ccd0;--text-bright:#f0e8ec;--muted:#8a6068;--accent:#800020;--accent-dim:rgba(128,0,32,.18);--green:#22c55e;--green-dim:rgba(34,197,94,.1);--red:#ef4444;--red-dim:rgba(239,68,68,.1);--orange:#f59e0b;--orange-dim:rgba(245,158,11,.1)}
         body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;-webkit-font-smoothing:antialiased}
         .sidebar{width:64px;background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:12px 0;flex-shrink:0;z-index:10}
         .sidebar-logo{width:36px;height:36px;background:linear-gradient(135deg,#800020,#a0304a);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;font-weight:700;font-size:14px;color:#fff}
@@ -38,11 +38,11 @@
         .up{color:var(--green)}.down{color:var(--red)}.flat{color:var(--text-bright)}
         table{width:100%;border-collapse:collapse;font-size:12px}
         th{text-align:left;padding:8px 12px;color:var(--muted);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;background:var(--panel2);border-bottom:1px solid var(--border);position:sticky;top:0}
-        td{padding:8px 12px;border-bottom:1px solid rgba(58,32,48,.4)}tr:hover td{background:rgba(160,48,74,.04)}.sym{font-weight:600;color:var(--text-bright)}
+        td{padding:8px 12px;border-bottom:1px solid rgba(74,32,40,.4)}tr:hover td{background:rgba(128,0,32,.05)}.sym{font-weight:600;color:var(--text-bright)}
         label{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:4px}
         input,select{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:6px;font-size:13px;font-family:inherit;outline:none;transition:border .2s}input:focus,select:focus{border-color:var(--accent)}
         .field{margin-bottom:14px}.row{display:flex;gap:12px}.row>div{flex:1}
-        .toggle-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid rgba(58,32,48,.4)}.toggle-row:last-child{border-bottom:none}
+        .toggle-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid rgba(74,32,40,.4)}.toggle-row:last-child{border-bottom:none}
         .t-label{font-size:13px;font-weight:500;color:var(--text-bright)}.t-desc{font-size:11px;color:var(--muted);margin-top:2px}
         .toggle{width:40px;height:22px;background:var(--border);border-radius:11px;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0}.toggle.on{background:var(--accent)}
         .toggle::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}.toggle.on::after{transform:translateX(18px)}
@@ -57,7 +57,7 @@
         .chart-wrap{position:relative}
         .chart-tooltip{position:absolute;pointer-events:none;display:none;background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:11px;z-index:5;white-space:nowrap}
         .chart-tooltip .tt-val{font-weight:700;color:var(--text-bright)}.chart-tooltip .tt-date{color:var(--muted)}
-        .chart-crosshair{position:absolute;top:0;width:1px;background:rgba(160,48,74,.5);pointer-events:none;display:none}
+        .chart-crosshair{position:absolute;top:0;width:1px;background:rgba(128,0,32,.5);pointer-events:none;display:none}
         .bar-chart{display:flex;align-items:flex-end;justify-content:space-around;height:120px;padding:0 10px}
         .bar-col{display:flex;flex-direction:column;align-items:center;flex:1;max-width:80px;justify-content:flex-end}
         .bar-wrap{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;flex:1;width:100%}
@@ -66,7 +66,7 @@
         .line-chart{width:100%;height:160px;cursor:crosshair}
         @media(max-width:768px){.sidebar{width:48px}.nav-item span{display:none}.g2,.g3,.g4,.g-main{grid-template-columns:1fr}.row{flex-direction:column}.topbar{padding:0 10px}}
         .btn-side,.btn-chain-type,.btn-opt-side{flex:1}
-        .chain-strike{cursor:pointer;transition:background .15s}.chain-strike:hover td{background:rgba(160,48,74,.08)}.chain-strike.sel td{background:var(--accent-dim)}.chain-strike.atm{border-left:3px solid var(--accent)}
+        .chain-strike{cursor:pointer;transition:background .15s}.chain-strike:hover td{background:rgba(128,0,32,.08)}.chain-strike.sel td{background:var(--accent-dim)}.chain-strike.atm{border-left:3px solid var(--accent)}
     </style>
 </head>
 <body>
@@ -325,14 +325,14 @@ async function loadCharts(){
                 ctx.fillStyle='#5c6478';ctx.font='10px Inter,sans-serif';
                 const label=maxV-range*i/3;ctx.fillText('$'+label.toFixed(0),0,y+3)}
             // Line + fill
-            const gradient=ctx.createLinearGradient(0,0,0,ht);gradient.addColorStop(0,'rgba(160,48,74,.25)');gradient.addColorStop(1,'rgba(160,48,74,0)');
+            const gradient=ctx.createLinearGradient(0,0,0,ht);gradient.addColorStop(0,'rgba(128,0,32,.3)');gradient.addColorStop(1,'rgba(128,0,32,0)');
             ctx.beginPath();
             const pts=[];
             eq.forEach((v,i)=>{const x=pad+(w-pad-padR)*i/(eq.length-1);const y=padTop+(ht-padTop-padBot)*(1-(v-minV)/range);pts.push({x,y});if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)});
-            ctx.strokeStyle='#a0304a';ctx.lineWidth=2;ctx.stroke();
+            ctx.strokeStyle='#800020';ctx.lineWidth=2;ctx.stroke();
             ctx.lineTo(pts[pts.length-1].x,ht-padBot);ctx.lineTo(pts[0].x,ht-padBot);ctx.closePath();ctx.fillStyle=gradient;ctx.fill();
             // Dot on last point
-            const last=pts[pts.length-1];ctx.beginPath();ctx.arc(last.x,last.y,4,0,Math.PI*2);ctx.fillStyle='#a0304a';ctx.fill();ctx.strokeStyle='#0c0a0e';ctx.lineWidth=2;ctx.stroke();
+            const last=pts[pts.length-1];ctx.beginPath();ctx.arc(last.x,last.y,4,0,Math.PI*2);ctx.fillStyle='#800020';ctx.fill();ctx.strokeStyle='#0e0708';ctx.lineWidth=2;ctx.stroke();
             // Date labels
             ctx.fillStyle='#5c6478';ctx.font='10px Inter,sans-serif';
             if(ts.length>1){
