@@ -8,9 +8,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
-        :root{--bg:#0d0d10;--sidebar:#131316;--panel:#18181d;--panel2:#1e1e24;--border:#2a2a32;--text:#d1d1d8;--text-bright:#ededf0;--muted:#6b6b78;--accent:#800020;--accent-dim:rgba(128,0,32,.15);--green:#22c55e;--green-dim:rgba(34,197,94,.1);--red:#ef4444;--red-dim:rgba(239,68,68,.1);--orange:#f59e0b;--orange-dim:rgba(245,158,11,.1)}
-        body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;-webkit-font-smoothing:antialiased}
-        .sidebar{width:64px;background:var(--sidebar);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:12px 0;flex-shrink:0;z-index:10}
+        :root{--bg:#0e0708;--sidebar:#131012;--panel:#1a1416;--panel2:#201a1c;--border:#2e2224;--text:#d1cace;--text-bright:#ede8ea;--muted:#7a6a6e;--accent:#800020;--accent-dim:rgba(128,0,32,.15);--green:#22c55e;--green-dim:rgba(34,197,94,.1);--red:#ef4444;--red-dim:rgba(239,68,68,.1);--orange:#f59e0b;--orange-dim:rgba(245,158,11,.1)}
+        body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;-webkit-font-smoothing:antialiased;position:relative}
+        body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 60% at 20% 10%,rgba(128,0,32,.12) 0%,transparent 60%),radial-gradient(ellipse 60% 50% at 80% 90%,rgba(128,0,32,.08) 0%,transparent 50%);pointer-events:none;z-index:0}
+        .sidebar{width:64px;background:linear-gradient(180deg,#14090c,#100a0c);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:12px 0;flex-shrink:0;z-index:10}
         .sidebar-logo{width:36px;height:36px;background:linear-gradient(135deg,#800020,#a0304a);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;font-weight:700;font-size:14px;color:#fff;transition:transform .2s,box-shadow .2s}
         .sidebar-logo:hover{transform:scale(1.1);box-shadow:0 0 16px rgba(128,0,32,.5)}
         .sidebar-nav{display:flex;flex-direction:column;gap:4px;flex:1;width:100%}
@@ -25,7 +26,7 @@
         .status-indicator.off{background:var(--red);box-shadow:0 0 8px rgba(239,68,68,.5)}
         .status-indicator.checking{background:var(--orange);animation:pulse 1.2s infinite}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-        .topbar{height:44px;background:var(--sidebar);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0;position:relative}
+        .topbar{height:44px;background:var(--sidebar);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:16px;flex-shrink:0;position:relative;box-shadow:0 1px 12px rgba(128,0,32,.08)}
         .topbar-title{font-size:14px;font-weight:600;color:var(--text-bright)}
         .topbar-right{margin-left:auto;display:flex;align-items:center;gap:12px;font-size:12px;color:var(--muted)}
         .topbar-stat{display:flex;align-items:center;gap:6px}.topbar-stat .val{font-weight:600;color:var(--text-bright)}
@@ -338,7 +339,7 @@ async function loadCharts(){
             ctx.strokeStyle='#800020';ctx.lineWidth=2;ctx.stroke();
             ctx.lineTo(pts[pts.length-1].x,ht-padBot);ctx.lineTo(pts[0].x,ht-padBot);ctx.closePath();ctx.fillStyle=gradient;ctx.fill();
             // Dot on last point
-            const last=pts[pts.length-1];ctx.beginPath();ctx.arc(last.x,last.y,4,0,Math.PI*2);ctx.fillStyle='#800020';ctx.fill();ctx.strokeStyle='#0d0d10';ctx.lineWidth=2;ctx.stroke();
+            const last=pts[pts.length-1];ctx.beginPath();ctx.arc(last.x,last.y,4,0,Math.PI*2);ctx.fillStyle='#800020';ctx.fill();ctx.strokeStyle='#0e0708';ctx.lineWidth=2;ctx.stroke();
             // Date labels
             ctx.fillStyle='#5c6478';ctx.font='10px Inter,sans-serif';
             if(ts.length>1){
