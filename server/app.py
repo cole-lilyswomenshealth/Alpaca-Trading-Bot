@@ -828,6 +828,127 @@ def close_option_position(symbol):
         logger.error(f"Error closing option position: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/quote/<symbol>', methods=['GET'])
+def get_quote(symbol):
+    """Get latest quote for a symbol"""
+    try:
+        quote = alpaca_client.get_latest_quote(symbol.upper())
+        if quote:
+            return jsonify({
+                'success': True,
+                'symbol': symbol.upper(),
+                'ask_price': float(quote.ask_price) if quote.ask_price else None,
+                'bid_price': float(quote.bid_price) if quote.bid_price else None,
+                'ask_size': float(quote.ask_size) if quote.ask_size else None,
+                'bid_size': float(quote.bid_size) if quote.bid_size else None,
+                'timestamp': quote.timestamp.isoformat() if quote.timestamp else None
+            })
+        else:
+            return jsonify({'success': False, 'error': 'No quote found'}), 404
+    except Exception as e:
+        logger.error(f"Error getting quote: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/options/chain', methods=['GET'])
+def get_option_chain():
+    """Get option chain for a symbol with live quotes"""
+    try:
+        underlying = request.args.get('symbol', 'SPY').upper()
+        expiration = request.args.get('expiration', '')
+        option_type = request.args.get('type', 'call')
+        expirations_only = request.args.get('expirations_only', 'false') == 'true'
+
+        import requests as req
+        headers = {
+            'APCA-API-KEY-ID': Config().ALPACA_API_KEY,
+            'APCA-API-SECRET-KEY': Config().ALPACA_SECRET_KEY
+        }
+
+        if expirations_only:
+            from datetime import timedelta
+            today = datetime.now().strftime('%Y-%m-%d')
+            far_out = (datetime.now() + timedelta(days=365)).strftime('%Y-%m-%d')
+            params = {'underlying_symbols': underlying, 'type': option_type, 'status': 'active',
+                      'expiration_date_gte': today, 'expiration_date_lte': far_out, 'limit': 10000}
+            resp = req.get('https://paper-api.alpaca.markets/v2/options/contracts', headers=headers, params=params)
+            resp.raise_for_status()
+            contracts = resp.json().get('option_contracts', [])
+            return jsonify({'success': True, 'expirations': sorted(set(c['expiration_date'] for c in contracts))})
+
+        if not expiration:
+            expiration = datetime.now().strftime('%Y-%m-%d')
+
+        params = {'underlying_symbols': underlying, 'type': option_type, 'status': 'active',
+                  'expiration_date': expiration, 'limit': 250}
+        resp = req.get('https://paper-api.alpaca.markets/v2/options/contracts', headers=headers, params=params)
+        resp.raise_for_status()
+        contracts = resp.json().get('option_contracts', [])
+        if not contracts:
+            return jsonify({'success': True, 'chain': [], 'expirations': []})
+
+        contracts.sort(key=lambda c: float(c['strike_price']))
+        symbols = [c['symbol'] for c in contracts]
+        snapshots = {}
+        for i in range(0, len(symbols), 100):
+            batch = ','.join(symbols[i:i+100])
+            snap_resp = req.get(f'https://data.alpaca.markets/v1beta1/options/snapshots?symbols={batch}&feed=indicative', headers=headers)
+            if snap_resp.status_code == 200:
+                snapshots.update(snap_resp.json().get('snapshots', {}))
+
+        underlying_price = None
+        try:
+            tr = req.get(f'https://data.alpaca.markets/v2/stocks/{underlying}/trades/latest', headers=headers)
+            if tr.status_code == 200:
+                underlying_price = tr.json().get('trade', {}).get('p')
+        except Exception:
+            pass
+
+        chain = []
+        for c in contracts:
+            snap = snapshots.get(c['symbol'], {})
+            quote = snap.get('latestQuote', {})
+            trade = snap.get('latestTrade', {})
+            chain.append({'symbol': c['symbol'], 'name': c.get('name', ''), 'strike': float(c['strike_price']),
+                          'expiration': c['expiration_date'], 'type': c['type'],
+                          'bid': quote.get('bp', 0), 'ask': quote.get('ap', 0), 'last': trade.get('p', 0),
+                          'volume': snap.get('dailyBar', {}).get('v', 0), 'open_interest': c.get('open_interest')})
+
+        return jsonify({'success': True, 'chain': chain, 'underlying_price': underlying_price, 'selected_expiration': expiration})
+    except Exception as e:
+        logger.error(f"Error getting option chain: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/options/order', methods=['POST'])
+def submit_option_order():
+    """Submit an option order for a specific contract symbol"""
+    try:
+        data = request.json
+        symbol = data.get('symbol')
+        qty = int(data.get('qty', 1))
+        side = data.get('side', 'buy')
+        order_type = data.get('order_type', 'market')
+        limit_price = data.get('limit_price')
+
+        if not symbol:
+            return jsonify({'success': False, 'error': 'symbol is required'}), 400
+
+        from alpaca.trading.requests import MarketOrderRequest, LimitOrderRequest
+        from alpaca.trading.enums import OrderSide, TimeInForce
+
+        order_side = OrderSide.BUY if side.lower() == 'buy' else OrderSide.SELL
+        if order_type == 'limit' and limit_price:
+            order_data = LimitOrderRequest(symbol=symbol, qty=qty, side=order_side,
+                                           time_in_force=TimeInForce.DAY, limit_price=round(float(limit_price), 2))
+        else:
+            order_data = MarketOrderRequest(symbol=symbol, qty=qty, side=order_side, time_in_force=TimeInForce.DAY)
+
+        order = alpaca_client.trading_client.submit_order(order_data)
+        return jsonify({'success': True, 'order_id': order.id, 'symbol': order.symbol,
+                        'qty': float(order.qty), 'side': order.side.value, 'status': order.status.value})
+    except Exception as e:
+        logger.error(f"Error submitting option order: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @app.route('/api/notes', methods=['GET'])
 def get_notes():
     """Get saved notes from file"""

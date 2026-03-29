@@ -65,6 +65,8 @@
         .bar-label{font-size:10px;color:var(--muted);margin-top:4px}.bar-val{font-size:10px;font-weight:600;margin-bottom:4px}
         .line-chart{width:100%;height:160px;cursor:crosshair}
         @media(max-width:768px){.sidebar{width:48px}.nav-item span{display:none}.g2,.g3,.g4,.g-main{grid-template-columns:1fr}.row{flex-direction:column}.topbar{padding:0 10px}}
+        .btn-side,.btn-chain-type,.btn-opt-side{flex:1}
+        .chain-strike{cursor:pointer;transition:background .15s}.chain-strike:hover td{background:rgba(59,130,246,.06)}.chain-strike.sel td{background:var(--accent-dim)}.chain-strike.atm{border-left:3px solid var(--accent)}
     </style>
 </head>
 <body>
@@ -94,6 +96,10 @@
         <div class="nav-item" onclick="go('inputs',this)" title="Inputs">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
             <span>Inputs</span>
+        </div>
+        <div class="nav-item" onclick="go('trade',this)" title="Trade">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            <span>Trade</span>
         </div>
     </div>
     <div class="sidebar-bottom"><div class="status-indicator checking" id="serverDot" title="Server status"></div></div>
@@ -182,6 +188,58 @@
             <div style="font-size:11px;color:var(--muted);margin-top:6px" id="saveStatus"></div>
         </div>
     </div>
+    <!-- TRADE -->
+    <div class="content" id="pg-trade">
+        <!-- Sub-tabs: Stocks / Options -->
+        <div style="display:flex;gap:4px;margin-bottom:14px">
+            <button class="btn btn-accent trade-sub active" onclick="tradeSub('stocks',this)">Stocks</button>
+            <button class="btn btn-ghost trade-sub" onclick="tradeSub('options',this)">Options</button>
+        </div>
+        <!-- STOCKS SUB -->
+        <div id="trade-stocks">
+            <div class="grid g2">
+                <div class="panel"><div class="panel-header"><span class="panel-title">Place Stock Order</span></div><div class="panel-body">
+                    <div class="field"><label>Symbol</label><input id="tStockSym" placeholder="AAPL, TSLA..." autocapitalize="characters"></div>
+                    <div id="tStockQuote" style="font-size:12px;color:var(--muted);margin-bottom:10px"></div>
+                    <div class="row"><div class="field"><label>Side</label><div style="display:flex;gap:4px"><button class="btn btn-accent btn-side" id="tBuyBtn" onclick="tSetSide('buy')">Buy</button><button class="btn btn-ghost btn-side" id="tSellBtn" onclick="tSetSide('sell')">Sell</button></div></div></div>
+                    <div class="row"><div class="field"><label>Quantity</label><input type="number" id="tStockQty" placeholder="1" step="any" min="0"></div><div class="field"><label>Order Type</label><select id="tStockType" onchange="$('tStockPriceWrap').style.display=this.value==='market'?'none':'block'"><option value="market">Market</option><option value="limit">Limit</option><option value="stop">Stop</option></select></div></div>
+                    <div class="field" id="tStockPriceWrap" style="display:none"><label>Price</label><input type="number" id="tStockPrice" step="0.01" placeholder="0.00"></div>
+                    <button class="btn btn-accent" style="width:100%;padding:12px;font-size:14px" onclick="tSubmitStock()">Place Order</button>
+                    <div id="tStockResult" style="margin-top:8px;font-size:12px"></div>
+                </div></div>
+                <div>
+                    <div class="panel"><div class="panel-header"><span class="panel-title">Quick Actions</span></div><div class="panel-body">
+                        <button class="btn btn-red" style="width:100%;margin-bottom:8px" onclick="tCloseAll()">Close All Positions</button>
+                        <button class="btn btn-ghost" style="width:100%" onclick="tCancelAll()">Cancel All Orders</button>
+                    </div></div>
+                    <div class="panel"><div class="panel-header"><span class="panel-title">Option Positions</span></div><div class="panel-body no-pad"><div id="tOptPositions"><div class="empty">No option positions</div></div></div></div>
+                </div>
+            </div>
+        </div>
+        <!-- OPTIONS SUB -->
+        <div id="trade-options" style="display:none">
+            <div class="panel"><div class="panel-header"><span class="panel-title">Option Chain</span></div><div class="panel-body">
+                <div class="row" style="align-items:flex-end">
+                    <div class="field" style="flex:1"><label>Symbol</label><input id="tChainSym" value="SPY" autocapitalize="characters"></div>
+                    <div class="field" style="flex:1"><label>Expiration</label><select id="tChainExp"><option>Loading...</option></select></div>
+                    <div class="field" style="flex:0.7"><label>Type</label><div style="display:flex;gap:4px"><button class="btn btn-accent btn-chain-type" id="tCallBtn" onclick="tSetChainType('call')">Calls</button><button class="btn btn-ghost btn-chain-type" id="tPutBtn" onclick="tSetChainType('put')">Puts</button></div></div>
+                    <div class="field" style="flex:0.4"><button class="btn btn-accent" style="width:100%" onclick="tLoadChain()">Load</button></div>
+                </div>
+                <div id="tChainPrice" style="font-size:12px;color:var(--muted);margin-top:4px"></div>
+            </div></div>
+            <div class="panel"><div class="panel-header"><span class="panel-title">Strikes</span></div><div class="panel-body no-pad"><div class="scroll-table" style="max-height:400px" id="tChainTable"><div class="empty">Enter a symbol and click Load</div></div></div></div>
+            <div class="panel" id="tOrderPanel" style="display:none"><div class="panel-header"><span class="panel-title">Order — <span id="tSelName"></span></span></div><div class="panel-body">
+                <div class="row" style="align-items:flex-end">
+                    <div class="field" style="flex:1"><label>Side</label><div style="display:flex;gap:4px"><button class="btn btn-accent btn-opt-side" id="tOptBuyBtn" onclick="tSetOptSide('buy')">Buy</button><button class="btn btn-ghost btn-opt-side" id="tOptSellBtn" onclick="tSetOptSide('sell')">Sell</button></div></div>
+                    <div class="field" style="flex:0.6"><label>Qty</label><input type="number" id="tOptQty" value="1" min="1"></div>
+                    <div class="field" style="flex:1"><label>Order Type</label><select id="tOptType" onchange="$('tOptLimitWrap').style.display=this.value==='limit'?'block':'none'"><option value="market">Market</option><option value="limit">Limit</option></select></div>
+                    <div class="field" style="flex:0.6;display:none" id="tOptLimitWrap"><label>Limit $</label><input type="number" id="tOptLimit" step="0.01"></div>
+                    <div class="field" style="flex:0.6"><button class="btn btn-accent" style="width:100%" onclick="tSubmitOpt()">Submit</button></div>
+                </div>
+                <div id="tOptResult" style="margin-top:8px;font-size:12px"></div>
+            </div></div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -197,8 +255,9 @@ function go(id,el){
     document.querySelectorAll('.content').forEach(p=>p.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(t=>t.classList.remove('active'));
     $('pg-'+id).classList.add('active');if(el)el.classList.add('active');
-    const names={portfolio:'Portfolio',positions:'Positions',orders:'Orders',webhooks:'Webhooks',closed:'Closed Trades',inputs:'Inputs'};
+    const names={portfolio:'Portfolio',positions:'Positions',orders:'Orders',webhooks:'Webhooks',closed:'Closed Trades',inputs:'Inputs',trade:'Trade'};
     $('pageTitle').textContent=names[id]||id;window.location.hash=id;
+    if(id==='trade')tLoadOptPositions();
 }
 
 async function api(path){try{const r=await fetch(API+path);if(!r.ok)throw new Error(r.status);return await r.json()}catch(e){return{success:false,error:e.message}}}
@@ -386,6 +445,80 @@ async function saveSettings(){
     const d=await apiPost('/api/settings',payload);
     if(d.success){toast('Inputs saved');$('saveStatus').textContent='Saved '+new Date().toLocaleTimeString()}else toast(d.error||'Failed','err');
 }
+
+// ── Trade Tab ──
+let tStockSide='buy',tOptSide_='buy',tChainType='call',tSelContract=null;
+function tradeSub(id,btn){document.querySelectorAll('.trade-sub').forEach(b=>{b.className='btn btn-ghost trade-sub'});btn.className='btn btn-accent trade-sub active';$('trade-stocks').style.display=id==='stocks'?'block':'none';$('trade-options').style.display=id==='options'?'block':'none';if(id==='options')tLoadChain()}
+function tSetSide(s){tStockSide=s;$('tBuyBtn').className='btn '+(s==='buy'?'btn-accent':'btn-ghost')+' btn-side';$('tSellBtn').className='btn '+(s==='sell'?'btn-accent':'btn-ghost')+' btn-side'}
+function tSetOptSide(s){tOptSide_=s;$('tOptBuyBtn').className='btn '+(s==='buy'?'btn-accent':'btn-ghost')+' btn-opt-side';$('tOptSellBtn').className='btn '+(s==='sell'?'btn-accent':'btn-ghost')+' btn-opt-side'}
+function tSetChainType(t){tChainType=t;$('tChainExp').dataset.loaded='';$('tCallBtn').className='btn '+(t==='call'?'btn-accent':'btn-ghost')+' btn-chain-type';$('tPutBtn').className='btn '+(t==='put'?'btn-accent':'btn-ghost')+' btn-chain-type'}
+
+// Stock quote lookup
+let tqt=null;
+$('tStockSym').addEventListener('input',function(){clearTimeout(tqt);const s=this.value.trim().toUpperCase();if(s.length<1){$('tStockQuote').textContent='';return}tqt=setTimeout(async()=>{try{const r=await api('/api/quote/'+encodeURIComponent(s));if(r.success){const mid=((r.ask_price||0)+(r.bid_price||0))/2;$('tStockQuote').textContent=s+' — Bid: $'+Number(r.bid_price).toFixed(2)+' / Ask: $'+Number(r.ask_price).toFixed(2)+' (Mid: $'+mid.toFixed(2)+')'}}catch(e){}},500)});
+
+async function tSubmitStock(){
+    const sym=$('tStockSym').value.trim().toUpperCase(),qty=parseFloat($('tStockQty').value),ot=$('tStockType').value,price=parseFloat($('tStockPrice').value)||null;
+    if(!sym||!qty){$('tStockResult').innerHTML='<span style="color:var(--red)">Enter symbol and qty</span>';return}
+    const body={symbol:sym,action:tStockSide,qty,order_type:ot};if(price)body.price=price;
+    const d=await apiPost('/api/order',body);
+    if(d.success){$('tStockResult').innerHTML='<span style="color:var(--green)">✓ '+tStockSide.toUpperCase()+' '+qty+' '+sym+' — '+d.status+'</span>';toast('Order placed');loadAccount()}
+    else $('tStockResult').innerHTML='<span style="color:var(--red)">'+( d.error||'Failed')+'</span>';
+}
+
+async function tCloseAll(){if(!confirm('Close ALL positions?'))return;const d=await api('/api/positions');for(const p of(d.positions||[]))await fetch(API+'/api/positions/'+encodeURIComponent(p.symbol),{method:'DELETE'});toast('All closed');loadAccount();loadPositions()}
+async function tCancelAll(){if(!confirm('Cancel ALL orders?'))return;const d=await api('/api/orders?status=open&limit=100');for(const o of(d.orders||[]))if(['new','accepted','pending_new'].includes(o.status))await fetch(API+'/api/orders/'+o.id,{method:'DELETE'});toast('All cancelled');loadOrders()}
+
+// Option chain
+async function tLoadChain(){
+    const sym=$('tChainSym').value.trim().toUpperCase();if(!sym)return;
+    const el=$('tChainTable');el.innerHTML='<div class="empty">Loading...</div>';
+    try{
+        const expSel=$('tChainExp');
+        if(!expSel.dataset.loaded||expSel.dataset.sym!==sym){
+            const ed=await api('/api/options/chain?symbol='+sym+'&type='+tChainType+'&expirations_only=true');
+            if(ed.success&&ed.expirations.length){expSel.innerHTML='';ed.expirations.forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;expSel.appendChild(o)});expSel.dataset.loaded='1';expSel.dataset.sym=sym}
+        }
+        const exp=$('tChainExp').value;
+        let url='/api/options/chain?symbol='+sym+'&type='+tChainType;if(exp)url+='&expiration='+exp;
+        const d=await api(url);if(!d.success){el.innerHTML='<div class="empty">'+(d.error||'Error')+'</div>';return}
+        $('tChainPrice').textContent=d.underlying_price?sym+' @ $'+Number(d.underlying_price).toFixed(2):'';
+        const chain=d.chain;if(!chain.length){el.innerHTML='<div class="empty">No contracts</div>';return}
+        const ulP=d.underlying_price||0;
+        let h='<table><tr><th>Strike</th><th>Bid</th><th>Ask</th><th>Last</th><th>Vol</th><th>OI</th></tr>';
+        chain.forEach(c=>{const atm=ulP&&Math.abs(c.strike-ulP)===Math.min(...chain.map(x=>Math.abs(x.strike-ulP)));
+            h+=`<tr class="chain-strike${atm?' atm':''}" onclick="tSelStrike(this,'${c.symbol}','${c.strike}','${c.bid}','${c.ask}','${c.name}')"><td style="font-weight:700;color:var(--accent)">${c.strike}</td><td class="up">${c.bid?'$'+Number(c.bid).toFixed(2):'—'}</td><td class="down">${c.ask?'$'+Number(c.ask).toFixed(2):'—'}</td><td>${c.last?'$'+Number(c.last).toFixed(2):'—'}</td><td>${(c.volume||0).toLocaleString()}</td><td>${c.open_interest||'—'}</td></tr>`});
+        h+='</table>';el.innerHTML=h;
+    }catch(e){el.innerHTML='<div class="empty">Connection error</div>'}
+}
+$('tChainExp').addEventListener('change',tLoadChain);
+$('tChainSym').addEventListener('keydown',function(e){if(e.key==='Enter')tLoadChain()});
+
+function tSelStrike(row,sym,strike,bid,ask,name){
+    document.querySelectorAll('.chain-strike').forEach(r=>r.classList.remove('sel'));row.classList.add('sel');
+    tSelContract=sym;$('tSelName').textContent=name||strike+' '+tChainType;
+    $('tOptLimit').value=tOptSide_==='buy'?ask:bid;
+    $('tOrderPanel').style.display='block';
+}
+
+async function tSubmitOpt(){
+    if(!tSelContract){$('tOptResult').innerHTML='<span style="color:var(--red)">Select a contract</span>';return}
+    const qty=parseInt($('tOptQty').value)||1,ot=$('tOptType').value,lp=parseFloat($('tOptLimit').value)||null;
+    const body={symbol:tSelContract,qty,side:tOptSide_,order_type:ot};if(ot==='limit'&&lp)body.limit_price=lp;
+    const d=await apiPost('/api/options/order',body);
+    if(d.success){$('tOptResult').innerHTML='<span style="color:var(--green)">✓ '+tOptSide_.toUpperCase()+' '+qty+' '+tSelContract+' — '+d.status+'</span>';toast('Option order placed');loadAccount();tLoadOptPositions()}
+    else $('tOptResult').innerHTML='<span style="color:var(--red)">'+(d.error||'Failed')+'</span>';
+}
+
+async function tLoadOptPositions(){
+    try{const d=await api('/api/options/positions');const pos=d.positions||[];
+        if(!pos.length){$('tOptPositions').innerHTML='<div class="empty">No option positions</div>';return}
+        let h='<table><tr><th>Symbol</th><th>Qty</th><th>Entry</th><th>Current</th><th>P&L</th><th></th></tr>';
+        pos.forEach(p=>{const pl=p.unrealized_pl||0;h+=`<tr><td class="sym">${p.symbol}</td><td>${p.qty}</td><td>${fmt(p.avg_entry_price)}</td><td>${fmt(p.current_price)}</td><td class="${plc(pl)}">${fmt(pl)}</td><td><button class="btn btn-red btn-sm" onclick="tCloseOpt('${p.symbol}')">Close</button></td></tr>`});
+        h+='</table>';$('tOptPositions').innerHTML=h;
+    }catch(e){$('tOptPositions').innerHTML='<div class="empty">Error</div>'}
+}
+async function tCloseOpt(s){if(!confirm('Close '+s+'?'))return;await fetch(API+'/api/options/close/'+encodeURIComponent(s),{method:'DELETE'});toast('Closed');tLoadOptPositions()}
 
 // Init
 const hash=window.location.hash.replace('#','');
