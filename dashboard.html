@@ -187,7 +187,7 @@
                 </div>
             </div>
             <div class="panel">
-                <div class="panel-header"><span class="panel-title">Daily P&L This Week</span></div>
+                <div class="panel-header"><span class="panel-title">Daily P&L � Last 5 Days</span></div>
                 <div class="panel-body"><div id="barChart" class="bar-chart"></div></div>
             </div>
         </div>
@@ -487,30 +487,35 @@ async function loadCharts(){
             $('lineChart').parentElement.insertAdjacentHTML('beforeend','<div class="empty">Not enough data yet</div>')}
 
         // ── Bar chart: daily P&L ──
-        if(pl.length>0){
-            const dayNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-            const count=Math.min(pl.length,5);
-            const startIdx=pl.length-count;
-            const weekPl=[];const weekLabels=[];
-            for(let i=startIdx;i<pl.length;i++){
-                weekPl.push(pl[i]||0);
-                weekLabels.push(ts[i]?dayNames[new Date(ts[i]*1000).getDay()]:'--');
-            }
-            // Adaptive: each bar height is proportional to its value relative to the max
-            // But minimum bar height is 20% so small values are still visible
-            const maxBar=Math.max(...weekPl.map(Math.abs));
-            let bh='';
-            weekPl.forEach((v,i)=>{
-                let barH;
-                if(maxBar===0){barH=8}
-                else{barH=Math.round(Math.abs(v)/maxBar*90);barH=Math.max(barH,8)}
-                const color=v>=0?'var(--green)':'var(--red)';
-                const sign=v>=0?'+':'-';
-                bh+=`<div class="bar-col"><div class="bar-wrap"><div class="bar-val" style="color:${color}">${sign}$${Math.abs(v).toFixed(2)}</div><div class="bar" style="height:${barH}px;background:${color}"></div></div><div class="bar-label">${weekLabels[i]}</div></div>`;
-            });
-            $('barChart').innerHTML=bh;
-        }else{$('barChart').innerHTML='<div class="empty">No P&L data yet</div>'}
+        // -- Bar chart is loaded separately --
+        await loadBarChart();
     }catch(e){console.error('Chart error:',e)}
+}
+
+async function loadBarChart(){
+    try{
+        const bd=await api('/api/portfolio-history?period=1W&timeframe=1D');
+        if(!bd.success||!bd.history)return;
+        const bpl=bd.history.profit_loss||[];
+        const bts=bd.history.timestamp||[];
+        if(!bpl.length){$('barChart').innerHTML='<div class="empty">No P&L data yet</div>';return}
+        const count=Math.min(bpl.length,5);
+        const startIdx=bpl.length-count;
+        const weekPl=[];const weekLabels=[];
+        for(let i=startIdx;i<bpl.length;i++){
+            weekPl.push(bpl[i]||0);
+            weekLabels.push(bts[i]?new Date(bts[i]*1000).toLocaleDateString('en-US',{month:'short',day:'numeric'}):'--');
+        }
+        const maxBar=Math.max(...weekPl.map(Math.abs));
+        let bh='';
+        weekPl.forEach((v,i)=>{
+            let barH;if(maxBar===0){barH=8}else{barH=Math.round(Math.abs(v)/maxBar*90);barH=Math.max(barH,8)}
+            const color=v>=0?'var(--green)':'var(--red)';
+            const sign=v>=0?'+':'-';
+            bh+=`<div class="bar-col"><div class="bar-wrap"><div class="bar-val" style="color:${color}">${sign}$${Math.abs(v).toFixed(2)}</div><div class="bar" style="height:${barH}px;background:${color}"></div></div><div class="bar-label">${weekLabels[i]}</div></div>`;
+        });
+        $('barChart').innerHTML=bh;
+    }catch(e){$('barChart').innerHTML='<div class="empty">Error loading P&L</div>'}
 }
 
 // ── Line chart hover ──
