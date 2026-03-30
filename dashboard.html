@@ -179,7 +179,7 @@
         </div>
         <div class="grid g2" style="margin-bottom:12px">
             <div class="panel">
-                <div class="panel-header"><span class="panel-title">Portfolio Value (1 Month)</span></div>
+                <div class="panel-header"><span class="panel-title">Portfolio Value</span><div id="chartPeriods" style="display:flex;gap:4px"><button class="btn btn-ghost btn-sm" onclick="setChartPeriod('1D','5Min')">1D</button><button class="btn btn-ghost btn-sm" onclick="setChartPeriod('1W','1H')">1W</button><button class="btn btn-accent btn-sm" onclick="setChartPeriod('1M','1D')">1M</button><button class="btn btn-ghost btn-sm" onclick="setChartPeriod('3M','1D')">3M</button><button class="btn btn-ghost btn-sm" onclick="setChartPeriod('1A','1D')">1Y</button></div></div>
                 <div class="panel-body chart-wrap">
                     <canvas id="lineChart" class="line-chart"></canvas>
                     <div class="chart-crosshair" id="crosshair"></div>
@@ -421,9 +421,18 @@ async function loadAccount(){
 
 // ── Charts ──
 let chartData={pts:[],eq:[],ts:[]};
+let chartPeriod='1M',chartTimeframe='1D';
+
+function setChartPeriod(period,tf){
+    chartPeriod=period;chartTimeframe=tf;
+    document.querySelectorAll('#chartPeriods .btn').forEach(b=>b.className='btn btn-ghost btn-sm');
+    event.target.className='btn btn-accent btn-sm';
+    loadCharts();
+}
+
 async function loadCharts(){
     try{
-        const [d,acct]=await Promise.all([api('/api/portfolio-history?period=1M&timeframe=1D'),api('/api/account')]);
+        const [d,acct]=await Promise.all([api('/api/portfolio-history?period='+chartPeriod+'&timeframe='+chartTimeframe),api('/api/account')]);
         if(!d.success||!d.history){console.error('Chart data error:',d.error);return}
         const h=d.history;
         const eq=[...(h.equity||[]).filter(v=>v!=null)];
@@ -470,8 +479,9 @@ async function loadCharts(){
             // Date labels
             ctx.fillStyle='#5c6478';ctx.font='10px Inter,sans-serif';
             if(ts.length>1){
-                const fd=new Date(ts[0]*1000).toLocaleDateString('en-US',{month:'short',day:'numeric'});
-                const ld=new Date(ts[ts.length-1]*1000).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+                const dateFmt=chartPeriod==='1D'?{hour:'numeric',minute:'2-digit'}:chartPeriod==='1A'?{month:'short',year:'2-digit'}:{month:'short',day:'numeric'};
+                const fd=new Date(ts[0]*1000).toLocaleDateString('en-US',dateFmt);
+                const ld=new Date(ts[ts.length-1]*1000).toLocaleDateString('en-US',dateFmt);
                 ctx.fillText(fd,pad,ht-2);ctx.fillText(ld,w-ctx.measureText(ld).width-padR,ht-2);
             }
             // Store for hover
@@ -518,8 +528,8 @@ $('lineChart').addEventListener('mousemove',function(e){
     const cross=$('crosshair');const tip=$('chartTip');
     cross.style.display='block';cross.style.left=pt.x+'px';cross.style.height=(chartData.ht-chartData.padBot)+'px';
     $('ttVal').textContent='$'+chartData.eq[closest].toFixed(2);
-    const dt=chartData.ts[closest]?new Date(chartData.ts[closest]*1000).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}):'';
-    $('ttDate').textContent=dt;
+    const dtFmt=chartPeriod==='1D'?{hour:'numeric',minute:'2-digit'}:{weekday:'short',month:'short',day:'numeric'};
+    const dt=chartData.ts[closest]?new Date(chartData.ts[closest]*1000).toLocaleDateString('en-US',dtFmt):'';    $('ttDate').textContent=dt;
     tip.style.display='block';
     let tipX=pt.x+12;if(tipX+120>chartData.w)tipX=pt.x-130;
     tip.style.left=tipX+'px';tip.style.top=Math.max(pt.y-20,0)+'px';
