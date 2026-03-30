@@ -71,7 +71,45 @@
         .bar-col:hover .bar-val{transform:scale(1.1)}
         .bar-label{font-size:10px;color:var(--muted);margin-top:4px}.bar-val{font-size:10px;font-weight:600;margin-bottom:4px;transition:transform .2s}
         .line-chart{width:100%;height:160px;cursor:crosshair}
-        @media(max-width:768px){.sidebar{width:48px}.nav-item span{display:none}.g2,.g3,.g4,.g-main{grid-template-columns:1fr}.row{flex-direction:column}.topbar{padding:0 10px}}
+        @media(max-width:768px){
+            .sidebar{width:48px;padding:8px 0}
+            .sidebar-logo{width:30px;height:30px;font-size:11px;margin-bottom:12px;border-radius:8px}
+            .nav-item span{display:none}
+            .nav-item{padding:8px 0;border-radius:6px}
+            .nav-item svg{width:18px;height:18px}
+            .topbar{padding:6px 10px;gap:4px;min-height:40px}
+            .topbar-title{font-size:12px}
+            .topbar-brand{font-size:10px;display:block}
+            .topbar-right{gap:6px;font-size:9px}
+            .topbar-stat{gap:3px}
+            .topbar-stat .val{font-size:9px}
+            .content{padding:10px}
+            .g2,.g3,.g4,.g-main{grid-template-columns:1fr}
+            .grid{gap:10px}
+            .row{flex-direction:column}
+            .panel{border-radius:12px;margin-bottom:10px}
+            .panel-header{padding:10px 12px}
+            .panel-body{padding:12px}
+            .stat-block{padding:12px}
+            .stat-block .val{font-size:20px}
+            .stat-block .lbl{font-size:9px}
+            table{font-size:11px}
+            th,td{padding:8px 10px}
+            .bar{width:22px}
+            .bar-label{font-size:9px}
+            .bar-val{font-size:9px}
+            .line-chart{height:120px}
+            .scroll-table{max-height:280px}
+            .btn{padding:6px 12px;font-size:11px}
+            .btn-sm{padding:4px 8px;font-size:10px}
+            .field{margin-bottom:12px}
+            input,select{padding:10px 12px;font-size:13px;border-radius:10px}
+            .toggle-row{padding:12px 0}
+            .t-label{font-size:13px}
+            .t-desc{font-size:11px}
+            .hint{font-size:11px}
+            .empty{padding:24px;font-size:12px}
+        }
         .btn-side,.btn-chain-type,.btn-opt-side{flex:1}
         .chain-strike{cursor:pointer;transition:background .2s}.chain-strike:hover td{background:rgba(255,255,255,.03)}.chain-strike.sel td{background:var(--accent-dim);border-left:2px solid var(--accent)}.chain-strike.atm{border-left:3px solid var(--accent)}
     </style>
@@ -185,7 +223,7 @@
     <!-- CLOSED -->
     <div class="content" id="pg-closed">
         <div class="panel" style="margin-bottom:12px">
-            <div style="display:flex;justify-content:space-around;padding:16px 10px">
+            <div style="display:flex;justify-content:space-around;padding:16px 10px;flex-wrap:wrap;gap:8px">
                 <div class="stat-block"><div class="val" id="clTotalPnl">--</div><div class="lbl">Total Realized P&L</div></div>
                 <div style="width:1px;background:var(--border);align-self:stretch"></div>
                 <div class="stat-block"><div class="val" id="clRoc">--</div><div class="lbl">Return on Capital</div></div>
