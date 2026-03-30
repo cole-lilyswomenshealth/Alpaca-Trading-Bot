@@ -503,7 +503,7 @@ async function loadCharts(){
             canvas.width=rect.width*dpr;canvas.height=160*dpr;
             canvas.style.width=rect.width+'px';canvas.style.height='160px';
             ctx.scale(dpr,dpr);
-            const w=rect.width;const ht=160;const pad=44;const padR=10;const padTop=10;const padBot=18;
+            const w=rect.width;const ht=160;const pad=44;const padR=30;const padTop=10;const padBot=18;
             const minV=Math.min(...eq)*0.999;const maxV=Math.max(...eq)*1.001;const range=maxV-minV||1;
             ctx.clearRect(0,0,w,ht);
             // Grid
@@ -565,12 +565,12 @@ async function loadBarChart(){
     }catch(e){$('barChart').innerHTML='<div class="empty">Error loading P&L</div>'}
 }
 
-// ── Line chart hover ──
-$('lineChart').addEventListener('mousemove',function(e){
+// ── Line chart hover + touch ──
+function chartInteract(clientX){
     if(!chartData.pts||!chartData.pts.length)return;
-    const rect=this.getBoundingClientRect();
-    const mx=e.clientX-rect.left;
-    // Find closest point
+    const canvas=$('lineChart');
+    const rect=canvas.getBoundingClientRect();
+    const mx=clientX-rect.left;
     let closest=0;let minDist=Infinity;
     chartData.pts.forEach((p,i)=>{const d=Math.abs(p.x-mx);if(d<minDist){minDist=d;closest=i}});
     const pt=chartData.pts[closest];
@@ -578,14 +578,18 @@ $('lineChart').addEventListener('mousemove',function(e){
     cross.style.display='block';cross.style.left=pt.x+'px';cross.style.height=(chartData.ht-chartData.padBot)+'px';
     $('ttVal').textContent='$'+chartData.eq[closest].toFixed(2);
     const dtFmt=chartPeriod==='1D'?{hour:'numeric',minute:'2-digit'}:{weekday:'short',month:'short',day:'numeric'};
-    const dt=chartData.ts[closest]?new Date(chartData.ts[closest]*1000).toLocaleDateString('en-US',dtFmt):'';    $('ttDate').textContent=dt;
+    const dt=chartData.ts[closest]?new Date(chartData.ts[closest]*1000).toLocaleDateString('en-US',dtFmt):'';
+    $('ttDate').textContent=dt;
     tip.style.display='block';
-    let tipX=pt.x+12;if(tipX+120>chartData.w)tipX=pt.x-130;
+    let tipX=pt.x+12;if(tipX+130>chartData.w)tipX=pt.x-140;
     tip.style.left=tipX+'px';tip.style.top=Math.max(pt.y-20,0)+'px';
-});
-$('lineChart').addEventListener('mouseleave',function(){
-    $('crosshair').style.display='none';$('chartTip').style.display='none';
-});
+}
+function chartHide(){$('crosshair').style.display='none';$('chartTip').style.display='none'}
+$('lineChart').addEventListener('mousemove',function(e){chartInteract(e.clientX)});
+$('lineChart').addEventListener('mouseleave',chartHide);
+$('lineChart').addEventListener('touchstart',function(e){e.preventDefault();chartInteract(e.touches[0].clientX)},{passive:false});
+$('lineChart').addEventListener('touchmove',function(e){e.preventDefault();chartInteract(e.touches[0].clientX)},{passive:false});
+$('lineChart').addEventListener('touchend',chartHide);
 
 async function loadPositions(){
     const d=await api('/api/account');if(!d.success||!d.positions||!d.positions.length){$('posTable').innerHTML='<div class="empty">No open positions</div>';return}
