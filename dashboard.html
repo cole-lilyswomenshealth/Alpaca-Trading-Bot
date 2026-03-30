@@ -439,16 +439,13 @@ async function loadCharts(){
         const ts=[...(h.timestamp||[])];
         const pl=[...(h.profit_loss||[])];
 
-        // Add real-time point for today if account data available
+        // Always add current real-time equity as the latest point
         if(acct.success&&acct.account){
             const nowTs=Math.floor(Date.now()/1000);
-            const lastTs=ts.length?ts[ts.length-1]:0;
-            if(nowTs-lastTs>3600){// Only add if last point is >1hr old
-                eq.push(acct.account.equity);
-                ts.push(nowTs);
-                const prevEq=eq.length>1?eq[eq.length-2]:acct.account.equity;
-                pl.push(acct.account.equity-prevEq);
-            }
+            eq.push(acct.account.equity);
+            ts.push(nowTs);
+            const prevEq=eq.length>1?eq[eq.length-2]:acct.account.equity;
+            pl.push(acct.account.equity-prevEq);
         }
 
         // ── Line chart: portfolio value ──
@@ -607,12 +604,28 @@ async function loadSettings(){
     p+=`<div class="hint">0 = any profit. 1.0 = need 1% profit. 5.0 = need 5% profit before sell is allowed.</div>`;
     $('inputsProfit').innerHTML=p;
     let f=`<div class="toggle-row" style="margin-bottom:14px"><div><div class="t-label">Fibonacci Sizing</div><div class="t-desc">Auto-scale position sizes using Fibonacci sequence</div></div><div class="toggle ${settings.fibonacci_enabled?'on':''}" onclick="this.classList.toggle('on')" data-key="fibonacci_enabled"></div></div>`;
-    f+=`<div class="row"><div class="field"><label>Base Qty</label><input type="number" id="s_fib_base" step="0.01" value="${settings.fibonacci_base||0.1}"></div><div class="field"><label>Max Steps</label><input type="number" id="s_fib_max" step="1" value="${settings.fibonacci_max_iterations||8}"></div></div>`;
+    f+=`<div class="row"><div class="field"><label>Base Qty</label><input type="number" id="s_fib_base" step="0.01" value="${settings.fibonacci_base||0.1}" oninput="calcFibTotal()"></div><div class="field"><label>Max Steps</label><input type="number" id="s_fib_max" step="1" value="${settings.fibonacci_max_iterations||8}" oninput="calcFibTotal()"></div></div>`;
+    f+=`<div style="background:var(--bg);border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:12px" id="fibCalc"></div>`;
     f+=`<div class="field"><label>Symbol Overrides (JSON)</label><input type="text" id="s_fib_symbols" value='${JSON.stringify(settings.fibonacci_symbol_bases||{})}'></div>`;
     $('inputsFib').innerHTML=f;
+    calcFibTotal();
     let r=`<div class="row"><div class="field"><label>Max Position Size ($)</label><input type="number" id="s_max_pos" step="100" value="${settings.max_position_size||10000}"></div><div class="field"><label>Max Open Positions</label><input type="number" id="s_max_open" step="1" value="${settings.max_open_positions||10}"></div></div>`;
     r+=`<div class="field"><label>Max Daily Loss ($)</label><input type="number" id="s_max_loss" step="100" value="${settings.max_daily_loss||500}"></div>`;
     $('inputsRisk').innerHTML=r;
+}
+
+function calcFibTotal(){
+    const base=parseFloat($('s_fib_base')?.value)||0.1;
+    const steps=parseInt($('s_fib_max')?.value)||8;
+    let fib=[1,1];for(let i=2;i<steps;i++)fib.push(fib[i-1]+fib[i-2]);
+    const perStep=fib.slice(0,steps).map(f=>f*base);
+    const total=perStep.reduce((a,b)=>a+b,0);
+    let html=`<div style="color:var(--muted);margin-bottom:6px">Fibonacci Sequence Preview</div>`;
+    html+=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">`;
+    perStep.forEach((q,i)=>{html+=`<span style="background:var(--accent-dim);color:var(--accent);padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600">Step ${i+1}: ${q}</span>`});
+    html+=`</div>`;
+    html+=`<div style="color:var(--text-bright);font-weight:600">Total shares at max: ${total.toFixed(4)} <span style="color:var(--muted);font-weight:400">across ${steps} buys</span></div>`;
+    if($('fibCalc'))$('fibCalc').innerHTML=html;
 }
 
 async function saveSettings(){
