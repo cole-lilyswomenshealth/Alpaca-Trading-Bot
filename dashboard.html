@@ -569,19 +569,22 @@ async function loadBarChart(){
 function chartInteract(clientX){
     if(!chartData.pts||!chartData.pts.length)return;
     const canvas=$('lineChart');
-    const rect=canvas.getBoundingClientRect();
-    const mx=clientX-rect.left;
+    const canvasRect=canvas.getBoundingClientRect();
+    const wrapRect=canvas.parentElement.getBoundingClientRect();
+    const offsetX=canvasRect.left-wrapRect.left;
+    const mx=clientX-canvasRect.left;
     let closest=0;let minDist=Infinity;
     chartData.pts.forEach((p,i)=>{const d=Math.abs(p.x-mx);if(d<minDist){minDist=d;closest=i}});
     const pt=chartData.pts[closest];
     const cross=$('crosshair');const tip=$('chartTip');
-    cross.style.display='block';cross.style.left=pt.x+'px';cross.style.height=(chartData.ht-chartData.padBot)+'px';
+    const crossX=pt.x+offsetX;
+    cross.style.display='block';cross.style.left=crossX+'px';cross.style.height=(chartData.ht-chartData.padBot)+'px';
     $('ttVal').textContent='$'+chartData.eq[closest].toFixed(2);
     const dtFmt=chartPeriod==='1D'?{hour:'numeric',minute:'2-digit'}:{weekday:'short',month:'short',day:'numeric'};
     const dt=chartData.ts[closest]?new Date(chartData.ts[closest]*1000).toLocaleDateString('en-US',dtFmt):'';
     $('ttDate').textContent=dt;
     tip.style.display='block';
-    let tipX=pt.x+12;if(tipX+130>chartData.w)tipX=pt.x-140;
+    let tipX=crossX+12;if(tipX+140>wrapRect.width)tipX=crossX-150;
     tip.style.left=tipX+'px';tip.style.top=Math.max(pt.y-20,0)+'px';
 }
 function chartHide(){$('crosshair').style.display='none';$('chartTip').style.display='none'}
