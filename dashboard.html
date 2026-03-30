@@ -384,12 +384,24 @@ async function loadAccount(){
 let chartData={pts:[],eq:[],ts:[]};
 async function loadCharts(){
     try{
-        const d=await api('/api/portfolio-history?period=1M&timeframe=1D');
+        const [d,acct]=await Promise.all([api('/api/portfolio-history?period=1M&timeframe=1D'),api('/api/account')]);
         if(!d.success||!d.history){console.error('Chart data error:',d.error);return}
         const h=d.history;
-        const eq=(h.equity||[]).filter(v=>v!=null);
-        const ts=(h.timestamp||[]);
-        const pl=(h.profit_loss||[]);
+        const eq=[...(h.equity||[]).filter(v=>v!=null)];
+        const ts=[...(h.timestamp||[])];
+        const pl=[...(h.profit_loss||[])];
+
+        // Add real-time point for today if account data available
+        if(acct.success&&acct.account){
+            const nowTs=Math.floor(Date.now()/1000);
+            const lastTs=ts.length?ts[ts.length-1]:0;
+            if(nowTs-lastTs>3600){// Only add if last point is >1hr old
+                eq.push(acct.account.equity);
+                ts.push(nowTs);
+                const prevEq=eq.length>1?eq[eq.length-2]:acct.account.equity;
+                pl.push(acct.account.equity-prevEq);
+            }
+        }
 
         // ── Line chart: portfolio value ──
         if(eq.length>1){
@@ -508,11 +520,30 @@ async function loadActivity(){
 }
 
 async function loadClosed(){
-    const d=await api('/api/closed-positions?limit=200&days=30');const pos=(d.positions||[]).filter(p=>p.symbol!=='TEST');
-    if(!pos.length){$('closedTable').innerHTML='<div class="empty">No closed trades</div>';$('overviewClosed').innerHTML='<div class="empty">No closed trades today</div>';$('clTotalPnl').textContent='$0.00';$('clRoc').textContent='0.00%';$('clCount').textContent='0';return}
+    const d=await api('/api/closed-positions?limit=500&days=30');const raw=(d.positions||[]).filter(p=>p.symbol!=='TEST');
+    if(!raw.length){$('closedTable').innerHTML='<div class="empty">No closed trades</div>';$('overviewClosed').innerHTML='<div class="empty">No closed trades today</div>';$('clTotalPnl').textContent='$0.00';$('clRoc').textContent='0.00%';$('clCount').textContent='0';return}
+
+    // Group trades by symbol + close date (same symbol sold on same day = one row)
+    const groups={};
+    raw.forEach(p=>{
+        const date=p.closed_at?p.closed_at.split('T')[0]:'unknown';
+        const key=p.symbol+'_'+date;
+        if(!groups[key])groups[key]={symbol:p.symbol,totalQty:0,totalCost:0,totalProceeds:0,totalPnl:0,closed_at:p.closed_at,count:0};
+        const g=groups[key];
+        g.totalQty+=p.qty;g.totalCost+=p.open_price*p.qty;g.totalProceeds+=p.close_price*p.qty;g.totalPnl+=p.pnl;g.count++;
+    });
+    const pos=Object.values(groups).map(g=>({
+        symbol:g.symbol,qty:g.totalQty,
+        avg_entry:g.totalQty>0?g.totalCost/g.totalQty:0,
+        avg_exit:g.totalQty>0?g.totalProceeds/g.totalQty:0,
+        pnl:g.totalPnl,
+        pnl_pct:g.totalCost>0?(g.totalPnl/g.totalCost*100):0,
+        closed_at:g.closed_at,count:g.count
+    })).sort((a,b)=>(b.closed_at||'').localeCompare(a.closed_at||''));
+
     let tp=0,tc=0;const today=new Date().toISOString().split('T')[0],tt=[];
-    let h='<table><tr><th>Symbol</th><th>Qty</th><th>Entry</th><th>Exit</th><th>P&L</th><th>%</th><th>Closed</th></tr>';
-    pos.forEach(p=>{tp+=p.pnl;tc+=p.open_price*p.qty;h+=`<tr><td class="sym">${p.symbol}</td><td>${p.qty}</td><td>${fmt(p.open_price)}</td><td>${fmt(p.close_price)}</td><td class="${plc(p.pnl)}">${fmt(p.pnl)}</td><td class="${plc(p.pnl_pct)}">${pct(p.pnl_pct)}</td><td style="color:var(--muted)">${p.closed_at?new Date(p.closed_at).toLocaleString():'--'}</td></tr>`;if(p.closed_at&&p.closed_at.startsWith(today))tt.push(p)});
+    let h='<table><tr><th>Symbol</th><th>Total Qty</th><th>Avg Entry</th><th>Avg Exit</th><th>P&L</th><th>Return %</th><th>Date</th></tr>';
+    pos.forEach(p=>{tp+=p.pnl;tc+=p.avg_entry*p.qty;h+=`<tr><td class="sym">${p.symbol}</td><td>${Number(p.qty).toFixed(4)}</td><td>${fmt(p.avg_entry)}</td><td>${fmt(p.avg_exit)}</td><td class="${plc(p.pnl)}">${fmt(p.pnl)}</td><td class="${plc(p.pnl_pct)}">${pct(p.pnl_pct)}</td><td style="color:var(--muted)">${p.closed_at?new Date(p.closed_at).toLocaleDateString():'--'}</td></tr>`;if(p.closed_at&&p.closed_at.startsWith(today))tt.push(p)});
     h+='</table>';$('closedTable').innerHTML=h;
     const roc=tc>0?(tp/tc*100):0;$('clTotalPnl').textContent=fmt(tp);$('clTotalPnl').className='val '+plc(tp);$('clRoc').textContent=pct(roc);$('clRoc').className='val '+plc(roc);$('clCount').textContent=pos.length;
     if(tt.length){let tdp=0;let th='<table><tr><th>Symbol</th><th>P&L</th><th>%</th></tr>';tt.forEach(p=>{tdp+=p.pnl;th+=`<tr><td class="sym">${p.symbol}</td><td class="${plc(p.pnl)}">${fmt(p.pnl)}</td><td class="${plc(p.pnl_pct)}">${pct(p.pnl_pct)}</td></tr>`});th+='</table>';$('overviewClosed').innerHTML=th;$('closedPnlBadge').innerHTML=`<span class="badge ${tdp>=0?'b-green':'b-red'}">${fmt(tdp)}</span>`}
