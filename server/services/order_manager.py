@@ -144,18 +144,28 @@ class OrderManager:
             # PROFIT PROTECTION: Check if this is a SELL order
             if action == 'sell':
                 try:
-                    # Try to get position - first with formatted symbol, then original
                     position = None
                     original_symbol = webhook_data.get('symbol', '').upper()
                     
-                    # Try formatted symbol first
-                    position = self.alpaca.get_position(symbol)
+                    # Try multiple symbol formats (crypto can be BTCUSD or BTC/USD)
+                    symbols_to_try = [symbol]
+                    if original_symbol != symbol:
+                        symbols_to_try.append(original_symbol)
+                    # Also try without slash if it has one, or with slash if it doesn't
+                    if '/' in symbol:
+                        symbols_to_try.append(symbol.replace('/', ''))
+                    elif len(symbol) > 4 and symbol.endswith('USD'):
+                        symbols_to_try.append(symbol[:-3] + '/' + symbol[-3:])
                     
-                    # If not found and symbols are different, try original
-                    if not position and original_symbol != symbol:
-                        position = self.alpaca.get_position(original_symbol)
-                        if position:
-                            symbol = original_symbol  # Use the symbol that worked
+                    for try_symbol in symbols_to_try:
+                        try:
+                            position = self.alpaca.get_position(try_symbol)
+                            if position:
+                                symbol = try_symbol
+                                print(f"Found position with symbol: {try_symbol}")
+                                break
+                        except:
+                            continue
                     
                     if position:
                         unrealized_pl = float(position.unrealized_pl)
