@@ -150,6 +150,10 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
             <span>Info</span>
         </div>
+        <div class="nav-item" onclick="go('autoprofit',this)" title="Auto Profit">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            <span>Auto TP</span>
+        </div>
     </div>
     <div class="sidebar-bottom"><div class="status-indicator checking" id="serverDot" title="Server status"></div></div>
 </div>
@@ -375,9 +379,49 @@
             </div>
         </div>
     </div>
-</div>
 
-<script>
+    <!-- AUTO TAKE-PROFIT -->
+    <div class="content" id="pg-autoprofit">
+        <div class="panel" style="background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(74,144,255,.05));border:none;padding:24px;margin-bottom:16px;border-radius:20px">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+                <div style="display:flex;align-items:center;gap:12px">
+                    <div style="width:44px;height:44px;background:linear-gradient(135deg,var(--green),#16a34a);border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+                    <div><div style="font-size:18px;font-weight:700;color:var(--text-bright)">Auto Take-Profit</div><div style="font-size:12px;color:var(--muted)">Automatically sells positions when profit target is hit</div></div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px">
+                    <span style="font-size:12px;color:var(--muted)" id="apStatusText">Stopped</span>
+                    <div class="toggle" id="apToggle" onclick="toggleAutoProfit()"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid g2">
+            <div>
+                <div class="panel">
+                    <div class="panel-header"><span class="panel-title">Settings</span></div>
+                    <div class="panel-body">
+                        <div class="field"><label>Default Profit Target (%)</label><input type="number" id="apTarget" step="0.1" min="0.01" value="0.5"><div class="hint">Sell when any position reaches this % profit</div></div>
+                        <div class="field"><label>Scan Interval (seconds)</label><input type="number" id="apInterval" step="1" min="2" value="5"><div class="hint">How often to check positions (minimum 2 seconds)</div></div>
+                        <div class="field"><label>Per-Symbol Targets (JSON)</label><input type="text" id="apSymbolTargets" value="{}"><div class="hint">Override targets per symbol, e.g. {"BTCUSD": 0.3, "NVDA": 1.0}</div></div>
+                        <button class="btn btn-accent" onclick="saveAutoProfit()" style="width:100%;margin-top:8px;padding:12px">Save Settings</button>
+                    </div>
+                </div>
+                <div class="panel">
+                    <div class="panel-header"><span class="panel-title">Stats</span></div>
+                    <div class="panel-body" style="font-size:13px">
+                        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--muted)">Scans Completed</span><span style="font-weight:600" id="apScans">0</span></div>
+                        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--muted)">Auto Sells Executed</span><span style="font-weight:600;color:var(--green)" id="apSells">0</span></div>
+                        <div style="display:flex;justify-content:space-between;padding:8px 0"><span style="color:var(--muted)">Last Scan</span><span style="font-weight:600" id="apLastScan">--</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="panel">
+                <div class="panel-header"><span class="panel-title">Activity Log</span><button class="btn btn-ghost btn-sm" onclick="loadAutoProfit()">Refresh</button></div>
+                <div class="panel-body no-pad"><div class="scroll-table" style="max-height:400px" id="apLog"><div class="empty">No activity yet</div></div></div>
+            </div>
+        </div>
+    </div>
+</div>
 const API=window.location.origin;
 let settings={};
 const $=id=>document.getElementById(id);
@@ -390,7 +434,7 @@ function go(id,el){
     document.querySelectorAll('.content').forEach(p=>p.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(t=>t.classList.remove('active'));
     $('pg-'+id).classList.add('active');if(el)el.classList.add('active');
-    const names={portfolio:'Portfolio',positions:'Positions',orders:'Orders',webhooks:'Webhooks',closed:'Closed Trades',inputs:'Inputs',trade:'Trade',resources:'Resources'};
+    const names={portfolio:'Portfolio',positions:'Positions',orders:'Orders',webhooks:'Webhooks',closed:'Closed Trades',inputs:'Inputs',trade:'Trade',resources:'Resources',autoprofit:'Auto Take-Profit'};
     $('pageTitle').textContent=names[id]||id;window.location.hash=id;
     if(id==='trade')tLoadOptPositions();
 }
@@ -716,14 +760,58 @@ async function tLoadOptPositions(){
 }
 async function tCloseOpt(s){if(!confirm('Close '+s+'?'))return;await fetch(API+'/api/options/close/'+encodeURIComponent(s),{method:'DELETE'});toast('Closed');tLoadOptPositions()}
 
+// ── Auto Profit Taker ──
+async function loadAutoProfit(){
+    const d=await api('/api/auto-profit/status');
+    if(!d.success)return;
+    $('apToggle').className='toggle'+(d.enabled?' on':'');
+    $('apStatusText').textContent=d.running?'Running':'Stopped';
+    $('apStatusText').style.color=d.running?'var(--green)':'var(--muted)';
+    $('apTarget').value=d.default_target;
+    $('apInterval').value=d.scan_interval;
+    $('apSymbolTargets').value=JSON.stringify(d.symbol_targets||{});
+    $('apScans').textContent=d.scan_count;
+    $('apSells').textContent=d.sells_executed;
+    $('apLastScan').textContent=d.last_scan?new Date(d.last_scan).toLocaleTimeString():'--';
+    // Log
+    if(d.log&&d.log.length){
+        let h='<table><tr><th>Time</th><th>Event</th></tr>';
+        d.log.slice().reverse().forEach(l=>{
+            const color=l.type==='success'?'var(--green)':l.type==='error'?'var(--red)':'var(--text)';
+            h+=`<tr><td style="color:var(--muted);white-space:nowrap">${new Date(l.time).toLocaleTimeString()}</td><td style="color:${color}">${l.msg}</td></tr>`;
+        });
+        h+='</table>';$('apLog').innerHTML=h;
+    }
+}
+
+async function toggleAutoProfit(){
+    const isOn=$('apToggle').classList.contains('on');
+    if(isOn){await apiPost('/api/auto-profit/stop',{})}
+    else{await saveAutoProfit();await apiPost('/api/auto-profit/start',{})}
+    setTimeout(loadAutoProfit,500);
+}
+
+async function saveAutoProfit(){
+    let symTargets={};
+    try{symTargets=JSON.parse($('apSymbolTargets').value.trim().replace(/:\s*\./g,': 0.')||'{}')}catch(e){toast('Invalid JSON in symbol targets','err');return}
+    const d=await apiPost('/api/auto-profit/settings',{
+        enabled:$('apToggle').classList.contains('on'),
+        default_target:parseFloat($('apTarget').value),
+        scan_interval:parseInt($('apInterval').value),
+        symbol_targets:symTargets
+    });
+    if(d.success)toast('Auto-profit settings saved');else toast(d.error||'Failed','err');
+    loadAutoProfit();
+}
+
 // Init
 const hash=window.location.hash.replace('#','');
 if(hash){const el=document.querySelector(`.nav-item[onclick*="'${hash}'"]`);if(el)go(hash,el)}
 function refreshAll(){checkHealth();loadAccount();loadActivity();loadClosed()}
-refreshAll();loadPositions();loadOrders();loadSettings();loadCharts();
+refreshAll();loadPositions();loadOrders();loadSettings();loadCharts();loadAutoProfit();
 // Restore chart period button highlight
 document.querySelectorAll('#chartPeriods .btn').forEach(b=>{const t=b.textContent;const map={'1D':'1D','1W':'1W','1M':'1M','3M':'3M','1Y':'1A'};if(map[t]===chartPeriod)b.className='btn btn-accent btn-sm';else b.className='btn btn-ghost btn-sm'});
-setInterval(refreshAll,15000);setInterval(loadOrders,30000);
+setInterval(refreshAll,15000);setInterval(loadOrders,30000);setInterval(loadAutoProfit,10000);
 </script>
 </body>
 </html>

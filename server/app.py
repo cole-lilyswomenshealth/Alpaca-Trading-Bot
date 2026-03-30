@@ -32,6 +32,10 @@ portfolio_analytics = PortfolioAnalytics(alpaca_client)
 options_trader = OptionsTrader(alpaca_client)
 rsi_scanner = RSIScanner()
 
+# Auto Profit Taker
+from services.auto_profit_taker import get_auto_profit_taker
+auto_profit_taker = get_auto_profit_taker(alpaca_client)
+
 # In-memory webhook log storage
 webhook_logs = []
 
@@ -1815,6 +1819,49 @@ def get_all_trades():
         })
     except Exception as e:
         logger.error(f"Error getting trades: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+# =====================================================
+# AUTO PROFIT TAKER API
+
+@app.route('/api/auto-profit/status', methods=['GET'])
+def get_auto_profit_status():
+    """Get auto profit taker status"""
+    try:
+        return jsonify({'success': True, **auto_profit_taker.get_status()})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/auto-profit/settings', methods=['POST'])
+def update_auto_profit_settings():
+    """Update auto profit taker settings"""
+    try:
+        data = request.json
+        auto_profit_taker.update_settings(data)
+        return jsonify({'success': True, 'message': 'Settings updated', **auto_profit_taker.get_status()})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/auto-profit/start', methods=['POST'])
+def start_auto_profit():
+    """Start auto profit taker"""
+    try:
+        auto_profit_taker.enabled = True
+        auto_profit_taker._save_settings()
+        auto_profit_taker.start()
+        return jsonify({'success': True, 'message': 'Auto Profit Taker started'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/auto-profit/stop', methods=['POST'])
+def stop_auto_profit():
+    """Stop auto profit taker"""
+    try:
+        auto_profit_taker.enabled = False
+        auto_profit_taker._save_settings()
+        auto_profit_taker.stop()
+        return jsonify({'success': True, 'message': 'Auto Profit Taker stopped'})
+    except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 # =====================================================
