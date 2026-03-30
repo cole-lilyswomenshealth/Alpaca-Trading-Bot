@@ -187,7 +187,7 @@
                 </div>
             </div>
             <div class="panel">
-                <div class="panel-header"><span class="panel-title">Daily P&L � Last 5 Days</span></div>
+                <div class="panel-header"><span class="panel-title">Daily P&L � Last 5 Days</span></div>
                 <div class="panel-body"><div id="barChart" class="bar-chart"></div></div>
             </div>
         </div>
@@ -421,10 +421,12 @@ async function loadAccount(){
 
 // ── Charts ──
 let chartData={pts:[],eq:[],ts:[]};
-let chartPeriod='1M',chartTimeframe='1D';
+let chartPeriod=localStorage.getItem('chartPeriod')||'1M',chartTimeframe=localStorage.getItem('chartTimeframe')||'1D';
 
 function setChartPeriod(period,tf){
     chartPeriod=period;chartTimeframe=tf;
+    localStorage.setItem('chartPeriod',period);
+    localStorage.setItem('chartTimeframe',tf);
     document.querySelectorAll('#chartPeriods .btn').forEach(b=>b.className='btn btn-ghost btn-sm');
     event.target.className='btn btn-accent btn-sm';
     loadCharts();
@@ -719,6 +721,8 @@ const hash=window.location.hash.replace('#','');
 if(hash){const el=document.querySelector(`.nav-item[onclick*="'${hash}'"]`);if(el)go(hash,el)}
 function refreshAll(){checkHealth();loadAccount();loadActivity();loadClosed()}
 refreshAll();loadPositions();loadOrders();loadSettings();loadCharts();
+// Restore chart period button highlight
+document.querySelectorAll('#chartPeriods .btn').forEach(b=>{const t=b.textContent;const map={'1D':'1D','1W':'1W','1M':'1M','3M':'3M','1Y':'1A'};if(map[t]===chartPeriod)b.className='btn btn-accent btn-sm';else b.className='btn btn-ghost btn-sm'});
 setInterval(refreshAll,15000);setInterval(loadOrders,30000);
 </script>
 </body>
