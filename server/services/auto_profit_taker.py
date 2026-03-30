@@ -89,17 +89,19 @@ class AutoProfitTaker:
             self.log = self.log[-100:]
 
     def start(self):
-        if self.running:
+        if self.running and self.thread and self.thread.is_alive():
             return
         self.running = True
         self.thread = threading.Thread(target=self._scan_loop, daemon=True)
         self.thread.start()
-        self._add_log('Auto Profit Taker started', 'success')
+        if not any(l['msg'] == 'Auto Profit Taker started' for l in self.log[-3:]):
+            self._add_log('Auto Profit Taker started', 'success')
         logger.info("Auto Profit Taker started")
 
     def stop(self):
         self.running = False
-        self._add_log('Auto Profit Taker stopped', 'info')
+        if not any(l['msg'] == 'Auto Profit Taker stopped' for l in self.log[-3:]):
+            self._add_log('Auto Profit Taker stopped', 'info')
         logger.info("Auto Profit Taker stopped")
 
     def _get_target(self, symbol):
@@ -125,6 +127,8 @@ class AutoProfitTaker:
                 logger.error(f"Auto profit scan error: {e}")
                 self._add_log(f'Scan error: {str(e)}', 'error')
             time.sleep(self.scan_interval)
+        # Thread is exiting — mark as not running
+        self.running = False
 
     def _scan_positions(self):
         if not self.enabled:

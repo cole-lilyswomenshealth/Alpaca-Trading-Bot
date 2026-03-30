@@ -787,22 +787,25 @@ async function loadAutoProfit(){
 
 async function toggleAutoProfit(){
     const isOn=$('apToggle').classList.contains('on');
-    if(isOn){await apiPost('/api/auto-profit/stop',{})}
-    else{await saveAutoProfit();await apiPost('/api/auto-profit/start',{})}
-    setTimeout(loadAutoProfit,500);
+    if(isOn){
+        await apiPost('/api/auto-profit/stop',{});
+    }else{
+        // Save current settings first, then start
+        await saveAutoProfit();
+        await apiPost('/api/auto-profit/start',{});
+    }
+    setTimeout(loadAutoProfit,1000);
 }
 
 async function saveAutoProfit(){
     let symTargets={};
     try{symTargets=JSON.parse($('apSymbolTargets').value.trim().replace(/:\s*\./g,': 0.')||'{}')}catch(e){toast('Invalid JSON in symbol targets','err');return}
     const d=await apiPost('/api/auto-profit/settings',{
-        enabled:$('apToggle').classList.contains('on'),
         default_target:parseFloat($('apTarget').value),
         scan_interval:parseInt($('apInterval').value),
         symbol_targets:symTargets
     });
     if(d.success)toast('Auto-profit settings saved');else toast(d.error||'Failed','err');
-    loadAutoProfit();
 }
 
 // Init
