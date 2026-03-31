@@ -23,7 +23,17 @@ class RiskManager:
             errors.append(f"Account status is {account.status}, not ACTIVE")
             return False, errors
         
-        # All other checks disabled for testing
+        # Check total exposure limit on BUY orders
+        if side.lower() == 'buy':
+            max_exposure = self.config.MAX_POSITION_SIZE  # Total max open value
+            positions = self.client.get_positions()
+            total_exposure = sum(abs(float(p.market_value)) for p in positions)
+            order_cost = self._estimate_order_cost(symbol, qty, side, order_type, price)
+            
+            if total_exposure + order_cost > max_exposure:
+                errors.append(f"Total exposure limit: ${total_exposure:.2f} invested + ${order_cost:.2f} order = ${total_exposure + order_cost:.2f} exceeds ${max_exposure:.2f} max")
+                return False, errors
+        
         return True, []
     
     def _estimate_order_cost(self, symbol, qty, side, order_type, price):
