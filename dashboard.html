@@ -150,6 +150,10 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
             <span>Info</span>
         </div>
+        <div class="nav-item" onclick="go('reports',this)" title="Data">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            <span>Data</span>
+        </div>
         <div class="nav-item" onclick="go('autoprofit',this)" title="Auto Profit">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
             <span>Auto TP</span>
@@ -380,6 +384,35 @@
         </div>
     </div>
 
+    <!-- DATA & REPORTS -->
+    <div class="content" id="pg-reports">
+        <div class="panel">
+            <div class="panel-header"><span class="panel-title">Downloadable Data</span></div>
+            <div class="panel-body no-pad">
+                <table>
+                    <tr><th>Dataset</th><th>Source</th><th>Actions</th></tr>
+                    <tr><td class="sym">Trade History</td><td style="color:var(--muted)">Alpaca</td><td><button class="btn btn-ghost btn-sm" onclick="previewData('trades')">Preview</button> <button class="btn btn-accent btn-sm" onclick="downloadCSV('trades')">CSV</button> <button class="btn btn-ghost btn-sm" onclick="generateReport('trades')">PDF</button></td></tr>
+                    <tr><td class="sym">Webhook Log</td><td style="color:var(--muted)">Supabase</td><td><button class="btn btn-ghost btn-sm" onclick="previewData('webhooks')">Preview</button> <button class="btn btn-accent btn-sm" onclick="downloadCSV('webhooks')">CSV</button> <button class="btn btn-ghost btn-sm" onclick="generateReport('webhooks')">PDF</button></td></tr>
+                    <tr><td class="sym">P&L Statement</td><td style="color:var(--muted)">Alpaca</td><td><button class="btn btn-ghost btn-sm" onclick="previewData('pnl')">Preview</button> <button class="btn btn-accent btn-sm" onclick="downloadCSV('pnl')">CSV</button> <button class="btn btn-accent btn-sm" onclick="generatePnlReport()">PDF Report</button></td></tr>
+                </table>
+            </div>
+        </div>
+        <div class="panel" id="dataPreviewPanel" style="display:none">
+            <div class="panel-header"><span class="panel-title" id="dataPreviewTitle">Preview</span><button class="btn btn-ghost btn-sm" onclick="$('dataPreviewPanel').style.display='none'">Close</button></div>
+            <div class="panel-body no-pad"><div class="scroll-table" style="max-height:400px" id="dataPreview"></div></div>
+        </div>
+    </div>
+
+    <!-- REPORT VIEWER -->
+    <div id="reportOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:200;background:var(--bg);overflow-y:auto">
+        <div style="position:sticky;top:0;background:var(--sidebar);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:12px;z-index:1">
+            <button class="btn btn-ghost" onclick="$('reportOverlay').style.display='none'" style="font-size:14px">← Back</button>
+            <span style="font-size:14px;font-weight:600;color:var(--text-bright)" id="reportOverlayTitle"></span>
+            <button class="btn btn-accent btn-sm" onclick="window.print()" style="margin-left:auto">Print / Save PDF</button>
+        </div>
+        <div id="reportOverlayContent" style="background:#fff;min-height:100vh"></div>
+    </div>
+
     <!-- AUTO TAKE-PROFIT -->
     <div class="content" id="pg-autoprofit">
         <div class="panel" style="background:linear-gradient(135deg,rgba(34,197,94,.1),rgba(74,144,255,.05));border:none;padding:24px;margin-bottom:16px;border-radius:20px">
@@ -435,7 +468,7 @@ function go(id,el){
     document.querySelectorAll('.content').forEach(p=>p.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(t=>t.classList.remove('active'));
     $('pg-'+id).classList.add('active');if(el)el.classList.add('active');
-    const names={portfolio:'Portfolio',positions:'Positions',orders:'Orders',webhooks:'Webhooks',closed:'Closed Trades',inputs:'Inputs',trade:'Trade',resources:'Resources',autoprofit:'Auto Take-Profit'};
+    const names={portfolio:'Portfolio',positions:'Positions',orders:'Orders',webhooks:'Webhooks',closed:'Closed Trades',inputs:'Inputs',trade:'Trade',resources:'Resources',reports:'Data & Reports',autoprofit:'Auto Take-Profit'};
     $('pageTitle').textContent=names[id]||id;window.location.hash=id;
     if(id==='trade')tLoadOptPositions();
 }
@@ -767,6 +800,45 @@ async function tLoadOptPositions(){
     }catch(e){$('tOptPositions').innerHTML='<div class="empty">Error</div>'}
 }
 async function tCloseOpt(s){if(!confirm('Close '+s+'?'))return;await fetch(API+'/api/options/close/'+encodeURIComponent(s),{method:'DELETE'});toast('Closed');tLoadOptPositions()}
+
+// ── Data & Reports ──
+async function previewData(type){
+    $('dataPreviewPanel').style.display='block';$('dataPreview').innerHTML='<div class="empty">Loading...</div>';
+    const {headers,rows,title}=await getDataset(type);$('dataPreviewTitle').textContent=title+' Preview';
+    if(!rows.length){$('dataPreview').innerHTML='<div class="empty">No data</div>';return}
+    let h='<table><tr>'+headers.map(h=>'<th>'+h+'</th>').join('')+'</tr>';
+    rows.slice(0,20).forEach(r=>{h+='<tr>'+r.map(c=>'<td>'+c+'</td>').join('')+'</tr>'});
+    h+='</table>';if(rows.length>20)h+=`<div style="text-align:center;padding:8px;color:var(--muted);font-size:11px">Showing 20 of ${rows.length}</div>`;
+    $('dataPreview').innerHTML=h;
+}
+async function getDataset(type){
+    let headers=[],rows=[],title='';
+    if(type==='trades'){title='Trade History';headers=['Date','Symbol','Side','Qty','Price','Total','Status'];const d=await api('/api/orders?limit=500');(d.orders||[]).filter(o=>o.status==='filled').forEach(o=>{rows.push([o.filled_at?new Date(o.filled_at).toLocaleString():'',o.symbol,o.side.toUpperCase(),o.filled_qty||o.qty,o.filled_avg_price?'$'+Number(o.filled_avg_price).toFixed(2):'',o.filled_avg_price&&o.filled_qty?'$'+(o.filled_avg_price*o.filled_qty).toFixed(2):'',o.status])})}
+    else if(type==='webhooks'){title='Webhook Log';headers=['Date','Symbol','Action','Status','Error'];const d=await api('/api/webhooks');(d.webhooks||[]).forEach(w=>{rows.push([w.timestamp?new Date(w.timestamp).toLocaleString():'',w.symbol||'',w.action||'',w.status||'',w.error||''])})}
+    else if(type==='pnl'){title='P&L Summary';headers=['Symbol','Qty','Entry','Exit','P&L','P&L %','Capital','Closed'];const d=await api('/api/closed-positions?limit=500&days=365');(d.positions||[]).filter(p=>p.symbol!=='TEST').forEach(p=>{rows.push([p.symbol,p.qty,'$'+Number(p.open_price).toFixed(2),'$'+Number(p.close_price).toFixed(2),(p.pnl>=0?'+':'')+('$'+Number(p.pnl).toFixed(2)),Number(p.pnl_pct).toFixed(2)+'%','$'+(p.open_price*p.qty).toFixed(2),p.closed_at?new Date(p.closed_at).toLocaleString():''])})}
+    return {headers,rows,title};
+}
+function downloadCSV(type){getDataset(type).then(({headers,rows,title})=>{let csv=headers.join(',')+'\n';rows.forEach(r=>{csv+=r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')+'\n'});const blob=new Blob([csv],{type:'text/csv'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=title.replace(/\s+/g,'_')+'_'+new Date().toISOString().split('T')[0]+'.csv';a.click();URL.revokeObjectURL(url);toast(title+' downloaded')})}
+function generateReport(type){getDataset(type).then(({headers,rows,title})=>{const now=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});const html=`<div style="font-family:'Helvetica Neue',Arial,sans-serif;padding:24px;color:#1a1a1a;max-width:900px;margin:0 auto;font-size:13px"><div style="border-bottom:3px solid #800020;margin-bottom:24px;padding-bottom:12px"><h1 style="font-size:22px;margin:0">Maroon Investments</h1><div style="font-size:13px;color:#666;margin-top:4px">${title} — ${now}</div></div><table style="width:100%;border-collapse:collapse"><tr>${headers.map(h=>'<th style="text-align:left;padding:8px;background:#f8f8f8;border-bottom:2px solid #ddd;font-size:11px;text-transform:uppercase;color:#666">'+h+'</th>').join('')}</tr>${rows.map(r=>'<tr>'+r.map(c=>'<td style="padding:8px;border-bottom:1px solid #eee">'+c+'</td>').join('')+'</tr>').join('')||'<tr><td colspan="'+headers.length+'" style="padding:20px;text-align:center;color:#999">No data</td></tr>'}</table><div style="margin-top:24px;padding-top:12px;border-top:2px solid #e5e5e5;font-size:11px;color:#999">${rows.length} records • ${now}</div></div>`;showReportView(title,html)})}
+function showReportView(title,html){$('reportOverlayTitle').textContent=title;$('reportOverlayContent').innerHTML=html;$('reportOverlay').style.display='block';$('reportOverlay').scrollTop=0}
+
+async function generatePnlReport(){
+    toast('Generating...');
+    const [account,closed,orders,history]=await Promise.all([api('/api/account'),api('/api/closed-positions?limit=1000&days=365'),api('/api/orders?limit=1000'),api('/api/portfolio-history?period=1M&timeframe=1D')]);
+    const a=account.account||{};const pos=(closed.positions||[]).filter(p=>p.symbol!=='TEST');const filled=(orders.orders||[]).filter(o=>o.status==='filled');const buys=filled.filter(o=>o.side==='buy');const sells=filled.filter(o=>o.side==='sell');const reportDate=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+    let tRP=0,tCC=0,wC=0,lC=0;const bS={};pos.forEach(p=>{tRP+=p.pnl;tCC+=p.open_price*p.qty;if(p.pnl>=0)wC++;else lC++;if(!bS[p.symbol])bS[p.symbol]={pnl:0,trades:0,capital:0};bS[p.symbol].pnl+=p.pnl;bS[p.symbol].trades++;bS[p.symbol].capital+=p.open_price*p.qty});
+    let tCD=0;buys.forEach(o=>{if(o.filled_avg_price&&o.filled_qty)tCD+=o.filled_avg_price*o.filled_qty});
+    const wR=pos.length>0?((wC/pos.length)*100).toFixed(1):'0.0';const rCC=tCC>0?((tRP/tCC)*100).toFixed(2):'0.00';const rCT=tCD>0?((tRP/tCD)*100).toFixed(2):'0.00';
+    const uPnl=(account.positions||[]).reduce((s,p)=>s+p.unrealized_pl,0);const tPnl=tRP+uPnl;const nav=a.equity||0;
+    const eqA=history.history?.equity||[];const pS=eqA.length>0?eqA[0]:nav;const pR=pS>0?((nav-pS)/pS*100).toFixed(2):'0.00';const ts=history.history?.timestamp||[];
+    let cImg='';if(eqA.length>1){const c=document.createElement('canvas');c.width=800;c.height=200;const x=c.getContext('2d');const P=50,R=20,T=20,B=30,W=800,H=200;const mn=Math.min(...eqA)*.999,mx=Math.max(...eqA)*1.001,rg=mx-mn||1;x.fillStyle='#fafafa';x.fillRect(0,0,W,H);x.strokeStyle='#e5e5e5';x.lineWidth=.5;for(let i=0;i<=4;i++){const y=T+(H-T-B)*i/4;x.beginPath();x.moveTo(P,y);x.lineTo(W-R,y);x.stroke();x.fillStyle='#999';x.font='10px Arial';x.fillText('$'+((mx-rg*i/4)).toFixed(0),2,y+3)}x.beginPath();const pt=[];eqA.forEach((v,i)=>{const px=P+(W-P-R)*i/(eqA.length-1);const py=T+(H-T-B)*(1-(v-mn)/rg);pt.push({x:px,y:py});i===0?x.moveTo(px,py):x.lineTo(px,py)});x.strokeStyle='#800020';x.lineWidth=2;x.stroke();const g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,'rgba(128,0,32,.15)');g.addColorStop(1,'rgba(128,0,32,0)');x.lineTo(pt[pt.length-1].x,H-B);x.lineTo(pt[0].x,H-B);x.closePath();x.fillStyle=g;x.fill();const l=pt[pt.length-1];x.beginPath();x.arc(l.x,l.y,4,0,Math.PI*2);x.fillStyle='#800020';x.fill();x.fillStyle='#999';x.font='10px Arial';if(ts.length>1){x.fillText(new Date(ts[0]*1000).toLocaleDateString('en-US',{month:'short',day:'numeric'}),P,H-8);const ld=new Date(ts[ts.length-1]*1000).toLocaleDateString('en-US',{month:'short',day:'numeric'});x.fillText(ld,W-R-x.measureText(ld).width,H-8)}cImg=c.toDataURL('image/png')}
+    let sR='';Object.entries(bS).sort((a,b)=>b[1].pnl-a[1].pnl).forEach(([s,d])=>{const r=d.capital>0?((d.pnl/d.capital)*100).toFixed(2):'0';sR+=`<tr><td style="padding:8px 10px;border-bottom:1px solid #eee">${s}</td><td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:right">${d.trades}</td><td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:right">$${d.capital.toFixed(2)}</td><td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:right;color:${d.pnl>=0?'#16a34a':'#dc2626'}">${d.pnl>=0?'+':''}$${d.pnl.toFixed(2)}</td><td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:right">${r}%</td></tr>`});
+    let tR='';pos.forEach(p=>{tR+=`<tr><td style="padding:8px 10px;border-bottom:1px solid #eee">${p.closed_at?new Date(p.closed_at).toLocaleDateString():''}</td><td style="padding:8px 10px;border-bottom:1px solid #eee">${p.symbol}</td><td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:right">${p.qty}</td><td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:right">$${Number(p.open_price).toFixed(2)}</td><td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:right">$${Number(p.close_price).toFixed(2)}</td><td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:right">$${(p.open_price*p.qty).toFixed(2)}</td><td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:right;color:${p.pnl>=0?'#16a34a':'#dc2626'}">${p.pnl>=0?'+':''}$${p.pnl.toFixed(2)}</td><td style="padding:8px 10px;border-bottom:1px solid #eee;text-align:right">${Number(p.pnl_pct).toFixed(2)}%</td></tr>`});
+    const _t='style="text-align:left;padding:8px 10px;background:#f8f8f8;border-bottom:2px solid #ddd;font-size:11px;text-transform:uppercase;color:#666;font-weight:600"';const _r='style="text-align:right;padding:8px 10px;background:#f8f8f8;border-bottom:2px solid #ddd;font-size:11px;text-transform:uppercase;color:#666;font-weight:600"';const _s='style="font-size:15px;font-weight:700;color:#800020;border-bottom:1px solid #e5e5e5;padding-bottom:6px;margin-bottom:12px"';const _d='style="padding:8px 10px;border-bottom:1px solid #eee"';const _dr='style="padding:8px 10px;border-bottom:1px solid #eee;text-align:right"';
+    const pc=v=>v>=0?'#16a34a':'#dc2626';const ps=v=>(v>=0?'+':'')+v.toFixed(2);
+    const html=`<div style="font-family:'Helvetica Neue',Arial,sans-serif;padding:20px;color:#1a1a1a;max-width:900px;margin:0 auto;font-size:13px;line-height:1.5"><div style="border-bottom:3px solid #800020;margin-bottom:20px;padding-bottom:10px"><h1 style="font-size:22px;font-weight:700;margin:0">Maroon Investments</h1><div style="font-size:12px;color:#666;margin-top:4px">Statement of Operations &amp; Performance Report — ${reportDate}</div></div><div style="margin-bottom:24px"><div ${_s}>Fund Summary</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px"><div style="border:1px solid #e5e5e5;border-radius:6px;padding:12px;text-align:center"><div style="font-size:10px;text-transform:uppercase;color:#888;margin-bottom:4px">Net Asset Value</div><div style="font-size:18px;font-weight:700">$${Number(nav).toLocaleString('en-US',{minimumFractionDigits:2})}</div></div><div style="border:1px solid #e5e5e5;border-radius:6px;padding:12px;text-align:center"><div style="font-size:10px;text-transform:uppercase;color:#888;margin-bottom:4px">Total P&L</div><div style="font-size:18px;font-weight:700;color:${pc(tPnl)}">$${ps(tPnl)}</div></div><div style="border:1px solid #e5e5e5;border-radius:6px;padding:12px;text-align:center"><div style="font-size:10px;text-transform:uppercase;color:#888;margin-bottom:4px">Period Return (1M)</div><div style="font-size:18px;font-weight:700;color:${pc(Number(pR))}">${Number(pR)>=0?'+':''}${pR}%</div></div></div></div><div style="margin-bottom:24px"><div ${_s}>Statement of Operations</div><table style="width:100%;border-collapse:collapse"><tr><td ${_d} style="font-weight:600">Realized Gains / (Losses)</td><td ${_dr} style="font-weight:600;color:${pc(tRP)}">$${ps(tRP)}</td></tr><tr><td ${_d} style="font-weight:600">Unrealized Appreciation / (Depreciation)</td><td ${_dr} style="font-weight:600;color:${pc(uPnl)}">$${ps(uPnl)}</td></tr><tr style="border-top:2px solid #333"><td ${_d} style="font-weight:700">Net Change in Net Assets</td><td ${_dr} style="font-weight:700;color:${pc(tPnl)}">$${ps(tPnl)}</td></tr></table></div><div style="margin-bottom:24px"><div ${_s}>Overall Performance</div><table style="width:100%;border-collapse:collapse"><tr><td ${_d}>Total Capital Deployed (All Buys)</td><td ${_dr}>$${tCD.toFixed(2)}</td></tr><tr><td ${_d}>Total Buy Orders</td><td ${_dr}>${buys.length}</td></tr><tr><td ${_d}>Total Sell Orders</td><td ${_dr}>${sells.length}</td></tr><tr><td ${_d}>Realized P&L vs Total Capital</td><td ${_dr}>${rCT}%</td></tr><tr><td ${_d}>Cash Balance</td><td ${_dr}>$${Number(a.cash||0).toFixed(2)}</td></tr><tr><td ${_d}>Buying Power</td><td ${_dr}>$${Number(a.buying_power||0).toFixed(2)}</td></tr></table></div><div style="margin-bottom:24px"><div ${_s}>Closed Trade Performance</div><table style="width:100%;border-collapse:collapse"><tr><td ${_d}>Capital Cycled (Closed Only)</td><td ${_dr}>$${tCC.toFixed(2)}</td></tr><tr><td ${_d}>Realized P&L</td><td ${_dr} style="color:${pc(tRP)}">$${ps(tRP)}</td></tr><tr><td ${_d}>Return on Closed Capital</td><td ${_dr}>${rCC}%</td></tr><tr><td ${_d}>Closed Trades</td><td ${_dr}>${pos.length}</td></tr><tr><td ${_d}>Wins / Losses</td><td ${_dr}>${wC} / ${lC}</td></tr><tr><td ${_d}>Win Rate</td><td ${_dr}>${wR}%</td></tr></table></div><div style="margin-bottom:24px"><div ${_s}>Performance by Symbol</div><table style="width:100%;border-collapse:collapse"><tr><th ${_t}>Symbol</th><th ${_r}>Trades</th><th ${_r}>Capital</th><th ${_r}>P&L</th><th ${_r}>Return</th></tr>${sR||'<tr><td colspan="5" style="text-align:center;color:#999;padding:20px">No closed trades</td></tr>'}</table></div><div style="margin-bottom:24px"><div ${_s}>Schedule of Closed Trades</div><table style="width:100%;border-collapse:collapse"><tr><th ${_t}>Date</th><th ${_t}>Symbol</th><th ${_r}>Qty</th><th ${_r}>Entry</th><th ${_r}>Exit</th><th ${_r}>Capital</th><th ${_r}>P&L</th><th ${_r}>Return</th></tr>${tR||'<tr><td colspan="8" style="text-align:center;color:#999;padding:20px">No closed trades</td></tr>'}</table></div><div style="margin-bottom:24px"><div ${_s}>Portfolio Performance</div>${cImg?'<img src="'+cImg+'" style="width:100%;border:1px solid #e5e5e5;border-radius:4px">':'<p style="color:#999">Not enough data</p>'}</div><div style="margin-top:24px;padding-top:10px;border-top:2px solid #e5e5e5;font-size:11px;color:#999"><strong>Maroon Investments</strong> — Confidential<br>Generated ${reportDate} • ${pos.length} closed trades • NAV $${Number(nav).toLocaleString('en-US',{minimumFractionDigits:2})}</div><div style="font-size:10px;color:#aaa;margin-top:12px;line-height:1.4">This document is provided for informational purposes only. Past performance is not indicative of future results. All investments involve risk.</div></div>`;
+    showReportView('P&L Statement',html);
+}
 
 // ── Auto Profit Taker ──
 async function loadAutoProfit(){
