@@ -44,6 +44,16 @@ def auto_deploy():
     """Auto-deploy: pull latest code from GitHub and restart"""
     try:
         import subprocess
+        # Check if this is an env update
+        data = request.json or {}
+        if data.get('update_env'):
+            env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env')
+            content = data['update_env']
+            with open(env_path, 'w') as f:
+                f.write(content)
+            subprocess.Popen(['sudo', 'systemctl', 'restart', 'trading-bot'])
+            return jsonify({'success': True, 'message': 'Env updated, restarting...'})
+        
         # Pull latest from GitHub
         result = subprocess.run(
             ['git', 'pull', 'origin', 'main'],
