@@ -1,0 +1,88 @@
+// Larry Williams Volatility Breakout — TradingView Pine Script v5
+//
+// The system Larry Williams used to win the 1987 Robbins World Cup
+// and his daughter Michelle won it with in 1997 (turning $10k into ~$100k).
+//
+// Strategy in one sentence:
+//   Buy if today's price thrusts K * yesterday's range above today's open;
+//   stop = STOP_MULT * yesterday's range below entry; exit at the close.
+//
+// This file contains BOTH a strategy version (for backtesting in TradingView)
+// and alertcondition() calls so you can wire alerts into your existing
+// /webhook endpoint to fire trades through Alpaca.
+//
+// Webhook payload format (matches OrderManager.execute_webhook_order):
+//   { "symbol": "{{ticker}}", "action": "buy",  "qty": 1, "order_type": "market" }
+//   { "symbol": "{{ticker}}", "action": "sell", "qty": 1, "order_type": "market" }
+//
+//@version=5
+strategy("Larry Williams Volatility Breakout",
+     overlay=true,
+     initial_capital=10000,
+     default_qty_type=strategy.percent_of_equity,
+     default_qty_value=20,
+     pyramiding=0,
+     calc_on_every_tick=false,
+     process_orders_on_close=false,
+     commission_type=strategy.commission.cash_per_order,
+     commission_value=0)
+
+// ---- Inputs --------------------------------------------------------------
+k          = input.float(0.5,  "K — fraction of prev range",      step=0.05, minval=0.05, maxval=2.0)
+stopMult   = input.float(1.0,  "Stop = stop_mult * prev range",   step=0.1,  minval=0.1,  maxval=3.0)
+useTrend   = input.bool(true,  "Trend filter: only long when Close[1] > 200d SMA")
+useVol     = input.bool(true,  "Vol filter: ATR(10) > avg(ATR(10), 50)")
+allowShort = input.bool(false, "Allow short breakdowns")
+smaLen     = input.int(200,    "Trend SMA length", minval=20, maxval=400)
+atrShortLen= input.int(10,     "Short ATR length", minval=2,  maxval=50)
+atrLongLen = input.int(50,     "Baseline ATR length", minval=10, maxval=200)
+useEodExit = input.bool(true,  "Exit at the close")
+
+// ---- Indicators ----------------------------------------------------------
+prevRange = high[1] - low[1]
+longTrigger  = open + k * prevRange
+shortTrigger = open - k * prevRange
+
+smaTrend  = ta.sma(close, smaLen)
+atrShort  = ta.atr(atrShortLen)
+atrLong   = ta.sma(atrShort, atrLongLen)
+
+trendOK = not useTrend or close[1] > smaTrend[1]
+volOK   = not useVol   or atrShort[1] > atrLong[1]
+filtersOK = trendOK and volOK
+
+// ---- Signals -------------------------------------------------------------
+longSignal  = filtersOK and high >= longTrigger and not na(prevRange) and prevRange > 0
+shortSignal = allowShort and filtersOK and low <= shortTrigger and not na(prevRange) and prevRange > 0
+
+longStop  = longTrigger  - stopMult * prevRange
+shortStop = shortTrigger + stopMult * prevRange
+
+// ---- Strategy orders -----------------------------------------------------
+if longSignal and strategy.position_size == 0
+    strategy.entry("Long", strategy.long, stop=longTrigger, comment="LW Long")
+    strategy.exit("Long stop", from_entry="Long", stop=longStop)
+
+if shortSignal and strategy.position_size == 0
+    strategy.entry("Short", strategy.short, stop=shortTrigger, comment="LW Short")
+    strategy.exit("Short stop", from_entry="Short", stop=shortStop)
+
+// EOD exit: close any open position at the bar's close (daily timeframe).
+if useEodExit and strategy.position_size != 0 and barstate.isconfirmed
+    strategy.close_all(comment="LW EOD")
+
+// ---- Plotting ------------------------------------------------------------
+plot(longTrigger,  title="Long Trigger",  color=color.new(color.green, 30))
+plot(shortTrigger, title="Short Trigger", color=color.new(color.red,   30), display=allowShort ? display.all : display.none)
+plot(smaTrend,     title="Trend SMA",     color=color.new(color.aqua,  60))
+
+bgcolor(longSignal  ? color.new(color.green, 88) : na)
+bgcolor(shortSignal ? color.new(color.red,   88) : na)
+
+// ---- Webhook alerts ------------------------------------------------------
+// Configure these in TradingView's "Create Alert" dialog, then point the
+// webhook URL at <your-server>/webhook.
+alertcondition(longSignal,  title="LW Long Breakout",
+     message='{"symbol":"{{ticker}}","action":"buy","qty":1,"order_type":"market"}')
+alertcondition(shortSignal, title="LW Short Breakdown",
+     message='{"symbol":"{{ticker}}","action":"sell","qty":1,"order_type":"market"}')

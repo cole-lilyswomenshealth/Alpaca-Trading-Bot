@@ -1437,6 +1437,117 @@ def update_auto_scanner_settings():
         return jsonify({'error': str(e)}), 500
 
 # =====================================================
+# LARRY WILLIAMS VOLATILITY BREAKOUT SCANNER ENDPOINTS
+# =====================================================
+# Daily volatility-breakout strategy (the system Larry Williams used to win
+# the 1987 World Cup of Futures Trading and his daughter Michelle won in 1997).
+# Long-only by default for equities, with 200d SMA trend filter and ATR vol filter.
+
+@app.route('/api/williams/scan', methods=['POST'])
+def run_williams_scan():
+    """Run a one-shot Williams breakout scan across the configured universe."""
+    try:
+        from services.williams_breakout_scanner import get_scanner
+        scanner = get_scanner()
+        results = scanner.scan_all()
+        return jsonify({
+            'success': True,
+            'results': results,
+            'count': len(results),
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        logger.error(f"Error running Williams scan: {str(e)}")
+        import traceback; traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/williams/status', methods=['GET'])
+def get_williams_status():
+    """Status of the Williams breakout scanner (params, symbols, session state)."""
+    try:
+        from services.williams_breakout_scanner import get_scanner
+        from services.auto_williams_scanner import get_auto_williams_scanner
+        scanner = get_scanner()
+        auto = get_auto_williams_scanner()
+        return jsonify({
+            'success': True,
+            'scanner': scanner.get_status(),
+            'auto': auto.get_status(),
+        })
+    except Exception as e:
+        logger.error(f"Error getting Williams status: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/williams/settings', methods=['POST'])
+def update_williams_settings():
+    """Update Williams scanner settings: symbols, k, stop_mult, filters, scan_interval, etc."""
+    try:
+        from services.auto_williams_scanner import get_auto_williams_scanner
+        settings = request.json or {}
+        auto = get_auto_williams_scanner()
+        auto.update_settings(settings)
+        return jsonify({
+            'success': True,
+            'message': 'Williams settings updated',
+            'status': auto.get_status()
+        })
+    except Exception as e:
+        logger.error(f"Error updating Williams settings: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/williams/start', methods=['POST'])
+def start_williams_scanner():
+    """Start the continuous Williams breakout scanner (threaded)."""
+    try:
+        from services.auto_williams_scanner import get_auto_williams_scanner
+        auto = get_auto_williams_scanner()
+        if request.json:
+            auto.update_settings(request.json)
+        success = auto.start()
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Auto Williams scanner started',
+                'status': auto.get_status()
+            })
+        return jsonify({
+            'success': False,
+            'error': 'Auto Williams scanner is already running',
+            'status': auto.get_status()
+        }), 400
+    except Exception as e:
+        logger.error(f"Error starting Williams scanner: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/williams/stop', methods=['POST'])
+def stop_williams_scanner():
+    """Stop the continuous Williams breakout scanner."""
+    try:
+        from services.auto_williams_scanner import get_auto_williams_scanner
+        auto = get_auto_williams_scanner()
+        success = auto.stop()
+        return jsonify({
+            'success': success,
+            'message': 'Auto Williams scanner stopped' if success else 'Already stopped',
+            'status': auto.get_status()
+        })
+    except Exception as e:
+        logger.error(f"Error stopping Williams scanner: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/williams/flatten', methods=['POST'])
+def flatten_williams():
+    """Force-close any positions opened by the Williams scanner today (manual EOD)."""
+    try:
+        from services.auto_williams_scanner import get_auto_williams_scanner
+        auto = get_auto_williams_scanner()
+        auto._flatten_today_positions()
+        return jsonify({'success': True, 'status': auto.get_status()})
+    except Exception as e:
+        logger.error(f"Error flattening Williams positions: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+# =====================================================
 # AUTONOMOUS TRADING ENDPOINTS - COMMENTED OUT
 # =====================================================
 

@@ -7,3 +7,8 @@ requests==2.31.0
 gunicorn==21.2.0
 postgrest>=0.10.0
 pytz
+pandas
+numpy
+# Optional: only needed if you backtest without Alpaca creds
+# yfinance
+# matplotlib
